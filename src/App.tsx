@@ -17,7 +17,21 @@ import Home from './page/Home';
 import ProductDetails from './page/ProductDetails';
 import CategoryPage from './page/CategoryPage';
 import SellerPage from './page/SellerPage';
+import Login from './page/Login';
+import Register from './page/Register';
 
+// Dashboard Routes
+import DashboardLayout from './page/dashboard/DashboardLayout';
+import StoreSettings from './page/dashboard/StoreSettings';
+import PublishProduct from './page/dashboard/PublishProduct';
+import BoostPlans from './page/dashboard/BoostPlans';
+import SellerStats from './page/dashboard/SellerStats';
+import MyProducts from './page/dashboard/MyProducts';
+
+// Context
+import { AuthProvider } from './context/AuthContext';
+
+// Types and Data
 import { Product } from './types';
 import { ALL_PRODUCTS } from './data';
 import { Globe, Share2, Mail, Check } from 'lucide-react';
@@ -80,8 +94,9 @@ export default function App() {
   };
 
   return (
-    <Router>
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative antialiased group" id="dushop-app-root">
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative antialiased group" id="dushop-app-root">
         
         {/* Sticky Header Group: contains Top Billboard publicity banner and Primary Main Navigation Header */}
         <div className="sticky top-0 z-40 w-full flex flex-col">
@@ -158,6 +173,18 @@ export default function App() {
                 />
               }
             />
+
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<StoreSettings />} />
+              <Route path="store" element={<StoreSettings />} />
+              <Route path="products" element={<MyProducts />} />
+              <Route path="publish" element={<PublishProduct />} />
+              <Route path="boost" element={<BoostPlans />} />
+              <Route path="stats" element={<SellerStats />} />
+            </Route>
           </Routes>
         </main>
 
@@ -315,5 +342,6 @@ export default function App() {
 
       </div>
     </Router>
+    </AuthProvider>
   );
 }

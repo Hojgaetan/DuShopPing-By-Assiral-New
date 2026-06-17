@@ -29,7 +29,9 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
     mot_de_passe TEXT NOT NULL, -- Stocké de manière sécurisée (hashé)
     date_inscription TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     statut_compte VARCHAR(20) DEFAULT 'Actif' NOT NULL,
-    CONSTRAINT chk_statut_compte CHECK (statut_compte IN ('Actif', 'Suspendu'))
+    role VARCHAR(20) DEFAULT 'Acheteur' NOT NULL,
+    CONSTRAINT chk_statut_compte CHECK (statut_compte IN ('Actif', 'Suspendu', 'Banni')),
+    CONSTRAINT chk_role CHECK (role IN ('Acheteur', 'Vendeur'))
 );
 
 -- Table spécialisée : Acheteur (Héritage de Utilisateur)
@@ -260,29 +262,37 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Procédure pour lier automatiquement la création d'un utilisateur Supabase Auth à notre table utilisateurs publique
 CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    user_role VARCHAR(20);
 BEGIN
-    INSERT INTO public.utilisateurs (id, nom, email, mot_de_passe, statut_compte)
+    user_role := coalesce(new.raw_user_meta_data->>'role', 'Acheteur');
+
+    INSERT INTO public.utilisateurs (id, nom, email, mot_de_passe, statut_compte, role)
     VALUES (
         new.id,
         coalesce(new.raw_user_meta_data->>'nom', 'Utilisateur ' || substring(new.id::text, 1, 8)),
         new.email,
         'SUPABASE_AUTH_MANAGED', -- Géré par le système d'authentification centralisé de Supabase
-        'Actif'
+        'Actif',
+        user_role
     );
     
-    -- Par défaut, nous en faisons également un Acheteur
-    INSERT INTO public.acheteurs (id, id_appareil)
-    VALUES (new.id, 'WEB_APP_AUTO');
+    IF user_role = 'Vendeur' THEN
+        INSERT INTO public.vendeurs (id) VALUES (new.id);
+        -- Auto-créer une boutique vide pour le vendeur
+        INSERT INTO public.boutiques (vendeur_id, nom) VALUES (new.id, 'Ma Boutique');
+    ELSE
+        INSERT INTO public.acheteurs (id, id_appareil) VALUES (new.id, 'WEB_APP_AUTO');
+    END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- S'active lors de la création d'un compte Supabase Auth
--- Remarque : Décommentez ceci si vous configurez l'authentification native Supabase Auth :
--- CREATE TRIGGER on_auth_user_created
---     AFTER INSERT ON auth.users
---     FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
 
 -- =========================================================================
 -- 8. DONNÉES DE DÉMARRAGE (SEED DATA - SEULEMENT SI VIDE)

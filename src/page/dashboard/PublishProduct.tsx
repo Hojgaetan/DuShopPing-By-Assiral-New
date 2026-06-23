@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PackagePlus, AlertTriangle, ArrowRight, Zap, CheckCircle2, ImagePlus } from 'lucide-react';
+import { PackagePlus, AlertTriangle, ArrowRight, Zap, CheckCircle2, ImagePlus, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { checkPublishingQuota, createProduct } from '../../lib/services';
+import { uploadToCloudinary } from '../../lib/cloudinary';
 
 export default function PublishProduct() {
   const { user } = useAuth();
@@ -18,10 +19,13 @@ export default function PublishProduct() {
     prix: '',
     categorie_id: 'c1111111-1111-1111-1111-111111111111', // Artisanat par défaut
     image_url: '',
+    telephone_contact: '',
   });
   
   const [publishing, setPublishing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const isQuotaExceeded = quota.used >= quota.max;
 
@@ -40,6 +44,25 @@ export default function PublishProduct() {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError('');
+
+    try {
+      const result = await uploadToCloudinary(file, 'dushoppping/produits');
+      setFormData(prev => ({ ...prev, image_url: result.secure_url }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de l\'upload de l\'image.';
+      setUploadError(message);
+      console.error('Cloudinary upload error:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isQuotaExceeded || !user?.boutiqueId) return;
@@ -50,6 +73,7 @@ export default function PublishProduct() {
         ...formData,
         prix: parseFloat(formData.prix)
       });
+      window.dispatchEvent(new Event('product_published'));
       setSuccess(true);
       // Actualiser le quota après 2 secondes et rediriger
       setTimeout(() => {
@@ -134,7 +158,15 @@ export default function PublishProduct() {
               <label className="block text-sm font-bold text-slate-700 mb-1.5">Photo principale de l'article</label>
               <div className="flex flex-col items-center justify-center w-full">
                 <label className="flex flex-col items-center justify-center w-full h-56 border-2 border-slate-200 border-dashed rounded-2xl cursor-pointer bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 transition-colors relative overflow-hidden group">
-                  {formData.image_url ? (
+                  {uploading ? (
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
+                        <Loader2 className="w-8 h-8 text-[#02603c] animate-spin" />
+                      </div>
+                      <p className="mb-2 text-sm text-slate-700 font-bold">Upload en cours sur Cloudinary...</p>
+                      <p className="text-xs text-slate-400">Veuillez patienter</p>
+                    </div>
+                  ) : formData.image_url ? (
                     <>
                       <img src={formData.image_url} alt="Aperçu" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -154,18 +186,13 @@ export default function PublishProduct() {
                     type="file" 
                     accept="image/*" 
                     className="hidden" 
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setFormData(prev => ({ ...prev, image_url: reader.result as string }));
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }} 
+                    disabled={uploading}
+                    onChange={handleImageUpload} 
                   />
                 </label>
+                {uploadError && (
+                  <p className="text-xs text-rose-600 mt-2 font-semibold w-full text-center">{uploadError}</p>
+                )}
               </div>
             </div>
             <div className="md:col-span-2">
@@ -222,12 +249,25 @@ export default function PublishProduct() {
                 placeholder="Décrivez les matériaux, la taille, l'histoire de l'objet..."
               />
             </div>
+            
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Numéro de téléphone de contact</label>
+              <input
+                type="tel"
+                name="telephone_contact"
+                required
+                value={formData.telephone_contact}
+                onChange={handleChange}
+                className="appearance-none block w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#02603c] bg-slate-50/50"
+                placeholder="Ex: +237 6XX XX XX XX"
+              />
+            </div>
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex justify-end">
             <button
               type="submit"
-              disabled={publishing || isQuotaExceeded}
+              disabled={publishing || isQuotaExceeded || uploading}
               className="flex items-center gap-2 bg-[#02603c] text-white hover:bg-[#01482c] px-6 py-3 rounded-xl font-extrabold transition-all disabled:opacity-50"
             >
               {publishing ? 'Publication...' : 'Publier l\'article'}

@@ -37,9 +37,11 @@ export async function createProduct(boutiqueId: string, productData: any) {
     prix: productData.prix,
     categorie_id: productData.categorie_id,
     image_url: productData.image_url || '',
+    telephone_contact: productData.telephone_contact || '',
     date_publication: new Date().toISOString(),
     statut: 'Actif',
     vues: 0,
+    clics_contact: 0,
   };
 
   produits.push(newProduct);
@@ -70,11 +72,31 @@ export async function subscribeToBoost(boutiqueId: string, planId: string, opera
 export async function getSellerStats(boutiqueId: string) {
   const produits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
   const mesProduits = produits.filter((p: any) => p.boutique_id === boutiqueId);
-  const totalVues = mesProduits.reduce((acc: number, p: any) => acc + (p.vues || 0), 0);
+  const totalClics = mesProduits.reduce((acc: number, p: any) => acc + (p.clics_contact || 0), 0);
+
+  const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
+  const boutique = boutiques.find((b: any) => b.id === boutiqueId);
 
   return {
-    vuesBoutique: Math.floor(Math.random() * 50) + mesProduits.length * 10,
-    vuesProduits: totalVues || mesProduits.length * 5,
-    clics: Math.floor(Math.random() * 10) + mesProduits.length,
+    vuesBoutique: boutique ? (boutique.vues || 0) : 0,
+    clics: totalClics,
   };
+}
+
+export async function incrementBoutiqueVues(boutiqueId: string) {
+  const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
+  const index = boutiques.findIndex((b: any) => b.id === boutiqueId);
+  if (index >= 0) {
+    boutiques[index].vues = (boutiques[index].vues || 0) + 1;
+    localStorage.setItem('dushop_boutiques_db', JSON.stringify(boutiques));
+  }
+}
+
+export async function incrementProductClics(productId: string) {
+  const produits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
+  const index = produits.findIndex((p: any) => p.id === productId);
+  if (index >= 0) {
+    produits[index].clics_contact = (produits[index].clics_contact || 0) + 1;
+    localStorage.setItem('dushop_produits_db', JSON.stringify(produits));
+  }
 }

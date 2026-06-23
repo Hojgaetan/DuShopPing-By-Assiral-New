@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Store, Save, MapPin, AlignLeft, ImagePlus } from 'lucide-react';
+import { Store, Save, MapPin, AlignLeft, ImagePlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchUserBoutique, createOrUpdateBoutique } from '../../lib/services';
+import { uploadToCloudinary } from '../../lib/cloudinary';
 
 export default function StoreSettings() {
   const { user } = useAuth();
@@ -15,6 +16,8 @@ export default function StoreSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   useEffect(() => {
     if (user?.id) {
@@ -34,6 +37,25 @@ export default function StoreSettings() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError('');
+
+    try {
+      const result = await uploadToCloudinary(file, 'dushoppping/boutiques');
+      setFormData(prev => ({ ...prev, logo_url: result.secure_url }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erreur lors de l\'upload de l\'image.';
+      setUploadError(message);
+      console.error('Cloudinary upload error:', err);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,8 +157,13 @@ export default function StoreSettings() {
             Logo ou Photo de Profil de la Boutique
           </label>
           <div className="flex items-center gap-6">
-            <div className="w-24 h-24 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden shrink-0">
-              {formData.logo_url ? (
+            <div className="w-24 h-24 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden shrink-0 relative">
+              {uploading ? (
+                <div className="flex flex-col items-center gap-1">
+                  <Loader2 className="w-8 h-8 text-[#02603c] animate-spin" />
+                  <span className="text-[10px] text-slate-400 font-semibold">Upload...</span>
+                </div>
+              ) : formData.logo_url ? (
                 <img src={formData.logo_url} alt="Logo Boutique" className="w-full h-full object-cover" />
               ) : (
                 <ImagePlus className="w-8 h-8 text-slate-300" />
@@ -146,21 +173,16 @@ export default function StoreSettings() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      setFormData(prev => ({ ...prev, logo_url: reader.result as string }));
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
-                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-emerald-50 file:text-[#02603c] hover:file:bg-emerald-100 cursor-pointer"
+                disabled={uploading}
+                onChange={handleImageUpload}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-emerald-50 file:text-[#02603c] hover:file:bg-emerald-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <p className="text-xs text-slate-400 mt-2">
-                Formats acceptés : JPG, PNG, WEBP.
+                Formats acceptés : JPG, PNG, WEBP. Max 5 Mo. L'image sera hébergée sur Cloudinary.
               </p>
+              {uploadError && (
+                <p className="text-xs text-rose-600 mt-1 font-semibold">{uploadError}</p>
+              )}
             </div>
           </div>
         </div>
@@ -174,7 +196,7 @@ export default function StoreSettings() {
         <div className="pt-4 border-t border-slate-100 flex justify-end">
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || uploading}
             className="flex items-center gap-2 bg-[#02603c] text-white hover:bg-[#01482c] px-6 py-3 rounded-xl font-extrabold transition-all disabled:opacity-70"
           >
             <Save className="w-5 h-5" />

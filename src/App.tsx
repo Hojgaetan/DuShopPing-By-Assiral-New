@@ -34,7 +34,7 @@ import { AuthProvider } from './context/AuthContext';
 // Types and Data
 import { Product } from './types';
 import { ALL_PRODUCTS } from './data';
-import { Globe, Share2, Mail, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 export default function App() {
   // Common states shared between routes or accessed through navigation
@@ -53,10 +53,42 @@ export default function App() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
 
+
   // Add customized items from Sell wizard
   const handleAddProduct = (newProd: Product) => {
     setCustomProducts(prev => [newProd, ...prev]);
   };
+
+  React.useEffect(() => {
+    const loadLocalProducts = () => {
+      const dbProduits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
+      const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
+      
+      const mapped: Product[] = dbProduits.map((p: any) => {
+        const boutique = boutiques.find((b: any) => b.id === p.boutique_id);
+        const sellerName = boutique ? boutique.nom : 'Boutique Indépendante';
+        
+        return {
+          id: p.id,
+          title: p.titre,
+          category: p.categorie_id === 'c1111111-1111-1111-1111-111111111111' ? 'Artisanat' :
+                    p.categorie_id === 'c2222222-2222-2222-2222-222222222222' ? 'Mode' :
+                    p.categorie_id === 'c3333333-3333-3333-3333-333333333333' ? 'Saveurs' : 'Cosmétiques',
+          price: p.prix,
+          image: p.image_url || 'https://via.placeholder.com/300?text=Produit',
+          seller: sellerName,
+          hasBadge: false,
+          isSponsorised: false,
+          description: p.description
+        };
+      });
+      setCustomProducts(mapped);
+    };
+
+    loadLocalProducts();
+    window.addEventListener('product_published', loadLocalProducts);
+    return () => window.removeEventListener('product_published', loadLocalProducts);
+  }, []);
 
   // Toggle favorite actions
   const handleToggleFavorite = (prodId: string) => {
@@ -87,10 +119,12 @@ export default function App() {
 
   const triggerCallSimulation = (product: Product) => {
     setContactProduct(product);
+    import('./lib/services').then(m => m.incrementProductClics(product.id));
   };
 
   const triggerChatSimulation = (product: Product) => {
     setChatProduct(product);
+    import('./lib/services').then(m => m.incrementProductClics(product.id));
   };
 
   return (
@@ -289,15 +323,12 @@ export default function App() {
               <p className="text-center sm:text-left">
                 © 2024 Kazi & Mali. Le panafricanisme moderne dans le commerce.
               </p>
-              <div className="flex items-center gap-4 text-slate-400">
-                <a href="#" className="hover:text-white transition-colors" title="Changer de langue / Pays">
-                  <Globe className="w-4 h-4" />
+              <div className="flex items-center gap-5 text-slate-400">
+                <a href="#" className="hover:text-[#1877F2] transition-colors" title="Suivez-nous sur Facebook" aria-label="Facebook">
+                  <ion-icon name="logo-facebook" style={{ fontSize: '22px' }}></ion-icon>
                 </a>
-                <a href="#" className="hover:text-white transition-colors" title="Partager le site">
-                  <Share2 className="w-4 h-4" />
-                </a>
-                <a href="#" className="hover:text-white transition-colors" title="Nous contacter">
-                  <Mail className="w-4 h-4" />
+                <a href="#" className="hover:text-[#E4405F] transition-colors" title="Suivez-nous sur Instagram" aria-label="Instagram">
+                  <ion-icon name="logo-instagram" style={{ fontSize: '22px' }}></ion-icon>
                 </a>
               </div>
             </div>

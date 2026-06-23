@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
     email VARCHAR(255) UNIQUE NOT NULL,
     telephone VARCHAR(50),
     mot_de_passe TEXT NOT NULL, -- Stocké de manière sécurisée (hashé)
+    photo_profil_url TEXT, -- URL de la photo de profil (ex: depuis Cloudinary)
     date_inscription TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     statut_compte VARCHAR(20) DEFAULT 'Actif' NOT NULL,
     role VARCHAR(20) DEFAULT 'Acheteur' NOT NULL,

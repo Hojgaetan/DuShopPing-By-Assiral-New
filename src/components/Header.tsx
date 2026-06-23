@@ -8,6 +8,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Search, Bell, Heart, ChevronDown, Sparkles, ShoppingBag, ArrowRight, Store } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
+import { fetchUserBoutique } from '../lib/services';
 
 interface HeaderProps {
   searchQuery: string;
@@ -51,6 +52,21 @@ export default function Header({
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [boutiqueLogo, setBoutiqueLogo] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && user.role === 'Vendeur') {
+      fetchUserBoutique(user.id).then(b => {
+        if (b && b.logo_url) {
+          setBoutiqueLogo(b.logo_url);
+        } else {
+          setBoutiqueLogo(null);
+        }
+      });
+    } else {
+      setBoutiqueLogo(null);
+    }
+  }, [user]);
   
   // Mega menu states
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
@@ -251,8 +267,12 @@ export default function Header({
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className="flex items-center gap-2 hover:bg-slate-50 p-1.5 rounded-full transition-colors cursor-pointer"
                   >
-                    <div className="w-9 h-9 rounded-full bg-[#02603c] text-white flex items-center justify-center font-bold text-sm">
-                      {user.nom.charAt(0).toUpperCase()}
+                    <div className="w-9 h-9 rounded-full bg-[#02603c] text-white flex items-center justify-center font-bold text-sm overflow-hidden border-2 border-transparent hover:border-emerald-200 transition-colors">
+                      {boutiqueLogo ? (
+                        <img src={boutiqueLogo} alt="Logo" className="w-full h-full object-cover" />
+                      ) : (
+                        user.nom.charAt(0).toUpperCase()
+                      )}
                     </div>
                   </button>
 

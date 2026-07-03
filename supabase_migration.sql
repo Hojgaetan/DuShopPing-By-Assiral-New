@@ -27,9 +27,12 @@ CREATE TABLE IF NOT EXISTS public.utilisateurs (
     email VARCHAR(255) UNIQUE NOT NULL,
     telephone VARCHAR(50),
     mot_de_passe TEXT NOT NULL, -- Stocké de manière sécurisée (hashé)
+    photo_profil_url TEXT, -- URL de la photo de profil (ex: depuis Cloudinary)
     date_inscription TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     statut_compte VARCHAR(20) DEFAULT 'Actif' NOT NULL,
-    CONSTRAINT chk_statut_compte CHECK (statut_compte IN ('Actif', 'Suspendu'))
+    role VARCHAR(20) DEFAULT 'Acheteur' NOT NULL,
+    CONSTRAINT chk_statut_compte CHECK (statut_compte IN ('Actif', 'Suspendu', 'Banni')),
+    CONSTRAINT chk_role CHECK (role IN ('Acheteur', 'Vendeur'))
 );
 
 -- Table spécialisée : Acheteur (Héritage de Utilisateur)
@@ -260,29 +263,37 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Procédure pour lier automatiquement la création d'un utilisateur Supabase Auth à notre table utilisateurs publique
 CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    user_role VARCHAR(20);
 BEGIN
-    INSERT INTO public.utilisateurs (id, nom, email, mot_de_passe, statut_compte)
+    user_role := coalesce(new.raw_user_meta_data->>'role', 'Acheteur');
+
+    INSERT INTO public.utilisateurs (id, nom, email, mot_de_passe, statut_compte, role)
     VALUES (
         new.id,
         coalesce(new.raw_user_meta_data->>'nom', 'Utilisateur ' || substring(new.id::text, 1, 8)),
         new.email,
         'SUPABASE_AUTH_MANAGED', -- Géré par le système d'authentification centralisé de Supabase
-        'Actif'
+        'Actif',
+        user_role
     );
     
-    -- Par défaut, nous en faisons également un Acheteur
-    INSERT INTO public.acheteurs (id, id_appareil)
-    VALUES (new.id, 'WEB_APP_AUTO');
+    IF user_role = 'Vendeur' THEN
+        INSERT INTO public.vendeurs (id) VALUES (new.id);
+        -- Auto-créer une boutique vide pour le vendeur
+        INSERT INTO public.boutiques (vendeur_id, nom) VALUES (new.id, 'Ma Boutique');
+    ELSE
+        INSERT INTO public.acheteurs (id, id_appareil) VALUES (new.id, 'WEB_APP_AUTO');
+    END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- S'active lors de la création d'un compte Supabase Auth
--- Remarque : Décommentez ceci si vous configurez l'authentification native Supabase Auth :
--- CREATE TRIGGER on_auth_user_created
---     AFTER INSERT ON auth.users
---     FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
 
 -- =========================================================================
 -- 8. DONNÉES DE DÉMARRAGE (SEED DATA - SEULEMENT SI VIDE)
@@ -303,3 +314,7 @@ VALUES
     ('p2222222-2222-2222-2222-222222222222', 'PLAN BOOST ÉLITE', 14, 15000.00, 1.80),
     ('p3333333-3333-3333-3333-333333333333', 'PLAN IMPÉRIAL', 30, 35000.00, 2.50)
 ON CONFLICT DO NOTHING;
+
+
+
+--dans le footer, fais que si on clique sur l'icone de facebook, ou instagram sa dirige vers les lien facebook.com ou instagram.com ,  dans la partie PUBLICITÉ que on vois dans ll'accueil il faut que si on clique sur parcourir ou découvrir, une popup doit s'afficher si l'utilisateur a deja créer sa boutique proposant a l'utilisateur de faire la publicité de ses produits quil post.  il devra choisi soit l'option boost automatisé, ou boost limité. Le boost automatiqué, sa va afficher les images de ses différents produits quil a poster soit a gauche soit a droite dans la partie publicité aux différents utilisateurs qui seront sur la partie home. et cela pendant 4s avec un bouton contacter en bas. L'option boost limité sa va afficher aussi de la meme façon mais seulement aux utulisateurs qui vont rechercher des produits similaires a ceux d'un vendeur. maintenant dans dashbord de l'utilisateur, fais en sorte que pour formule boost, si l'utilisateur choisi un formule, une popup apparait avec les information de la formule selectionner, si il clique sur ok, des pétar apparaissent on lui dit formule selectionner. 

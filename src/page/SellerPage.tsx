@@ -10,6 +10,7 @@ import { ArrowLeft, Star, MapPin, BadgeCheck, Phone, Mail, Globe, ArrowRight, He
 import { Product } from '../types';
 import { ALL_PRODUCTS, SELLERS } from '../data';
 import ProductCard from '../components/ProductCard';
+import { incrementBoutiqueVues } from '../lib/services';
 
 interface SellerPageProps {
   customProducts: Product[];
@@ -29,22 +30,32 @@ export default function SellerPage({
   const { sellerName } = useParams<{ sellerName: string }>();
   const navigate = useNavigate();
 
+  const decodedName = sellerName ? decodeURIComponent(sellerName) : 'Artisan Inconnu';
+  
+  const [realBoutique, setRealBoutique] = React.useState<any>(null);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as any });
-  }, [sellerName]);
-
-  const decodedName = sellerName ? decodeURIComponent(sellerName) : 'Artisan Inconnu';
+    
+    // Find real boutique by name
+    const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
+    const found = boutiques.find((b: any) => b.nom.toLowerCase() === decodedName.toLowerCase());
+    if (found) {
+      setRealBoutique(found);
+      incrementBoutiqueVues(found.id);
+    }
+  }, [decodedName]);
 
   // Get matching seller details or fallback
   const sellerInfo = SELLERS[decodedName] || {
     name: decodedName,
     rating: 4.8,
     hasBadge: true,
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop&q=80',
+    avatar: realBoutique?.logo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop&q=80',
     phone: '+237 600 00 00 00',
     whatsapp: '237600000000',
     location: 'Douala, Cameroun',
-    description: 'Artisan et créateur de la vitrine locale, engagé dans la promotion équitable des talents du continent camerounais.'
+    description: realBoutique?.description || 'Artisan et créateur de la vitrine locale, engagé dans la promotion équitable des talents du continent camerounais.'
   };
 
   // Find all products by seller

@@ -17,10 +17,24 @@ import Home from './page/Home';
 import ProductDetails from './page/ProductDetails';
 import CategoryPage from './page/CategoryPage';
 import SellerPage from './page/SellerPage';
+import Login from './page/Login';
+import Register from './page/Register';
 
+// Dashboard Routes
+import DashboardLayout from './page/dashboard/DashboardLayout';
+import StoreSettings from './page/dashboard/StoreSettings';
+import PublishProduct from './page/dashboard/PublishProduct';
+import BoostPlans from './page/dashboard/BoostPlans';
+import SellerStats from './page/dashboard/SellerStats';
+import MyProducts from './page/dashboard/MyProducts';
+
+// Context
+import { AuthProvider } from './context/AuthContext';
+
+// Types and Data
 import { Product } from './types';
 import { ALL_PRODUCTS } from './data';
-import { Globe, Share2, Mail, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 export default function App() {
   // Common states shared between routes or accessed through navigation
@@ -39,10 +53,42 @@ export default function App() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
 
+
   // Add customized items from Sell wizard
   const handleAddProduct = (newProd: Product) => {
     setCustomProducts(prev => [newProd, ...prev]);
   };
+
+  React.useEffect(() => {
+    const loadLocalProducts = () => {
+      const dbProduits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
+      const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
+      
+      const mapped: Product[] = dbProduits.map((p: any) => {
+        const boutique = boutiques.find((b: any) => b.id === p.boutique_id);
+        const sellerName = boutique ? boutique.nom : 'Boutique Indépendante';
+        
+        return {
+          id: p.id,
+          title: p.titre,
+          category: p.categorie_id === 'c1111111-1111-1111-1111-111111111111' ? 'Artisanat' :
+                    p.categorie_id === 'c2222222-2222-2222-2222-222222222222' ? 'Mode' :
+                    p.categorie_id === 'c3333333-3333-3333-3333-333333333333' ? 'Saveurs' : 'Cosmétiques',
+          price: p.prix,
+          image: p.image_url || 'https://via.placeholder.com/300?text=Produit',
+          seller: sellerName,
+          hasBadge: false,
+          isSponsorised: false,
+          description: p.description
+        };
+      });
+      setCustomProducts(mapped);
+    };
+
+    loadLocalProducts();
+    window.addEventListener('product_published', loadLocalProducts);
+    return () => window.removeEventListener('product_published', loadLocalProducts);
+  }, []);
 
   // Toggle favorite actions
   const handleToggleFavorite = (prodId: string) => {
@@ -73,15 +119,18 @@ export default function App() {
 
   const triggerCallSimulation = (product: Product) => {
     setContactProduct(product);
+    import('./lib/services').then(m => m.incrementProductClics(product.id));
   };
 
   const triggerChatSimulation = (product: Product) => {
     setChatProduct(product);
+    import('./lib/services').then(m => m.incrementProductClics(product.id));
   };
 
   return (
-    <Router>
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative antialiased group" id="dushop-app-root">
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative antialiased group" id="dushop-app-root">
         
         {/* Sticky Header Group: contains Top Billboard publicity banner and Primary Main Navigation Header */}
         <div className="sticky top-0 z-40 w-full flex flex-col">
@@ -158,6 +207,18 @@ export default function App() {
                 />
               }
             />
+
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<StoreSettings />} />
+              <Route path="store" element={<StoreSettings />} />
+              <Route path="products" element={<MyProducts />} />
+              <Route path="publish" element={<PublishProduct />} />
+              <Route path="boost" element={<BoostPlans />} />
+              <Route path="stats" element={<SellerStats />} />
+            </Route>
           </Routes>
         </main>
 
@@ -192,10 +253,10 @@ export default function App() {
                     </button>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors">Promotions & Codes</a>
+                    <a href="/#promotions" onClick={(e) => { e.preventDefault(); alert("Page Promotions en cours de construction"); }} className="hover:text-emerald-450 transition-colors">Promotions & Codes</a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors">Foire aux questions (FAQ)</a>
+                    <a href="/#faq" onClick={(e) => { e.preventDefault(); alert("Page FAQ en cours de construction"); }} className="hover:text-emerald-450 transition-colors">Foire aux questions (FAQ)</a>
                   </li>
                 </ul>
               </div>
@@ -207,16 +268,16 @@ export default function App() {
                 </h4>
                 <ul className="space-y-2.5 text-xs sm:text-sm text-slate-400">
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors font-sans">Conditions d'utilisation</a>
+                    <a href="/#terms" onClick={(e) => { e.preventDefault(); alert("Conditions d'utilisation en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Conditions d'utilisation</a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors font-sans">Politique de confidentialité</a>
+                    <a href="/#privacy" onClick={(e) => { e.preventDefault(); alert("Politique de confidentialité en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Politique de confidentialité</a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors font-sans">Conseils aux acheteurs</a>
+                    <a href="/#tips" onClick={(e) => { e.preventDefault(); alert("Conseils aux acheteurs en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Conseils aux acheteurs</a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors font-sans">Support Client</a>
+                    <a href="mailto:support@dushop.com" className="hover:text-emerald-450 transition-colors font-sans">Support Client</a>
                   </li>
                 </ul>
               </div>
@@ -262,15 +323,12 @@ export default function App() {
               <p className="text-center sm:text-left">
                 © 2024 Kazi & Mali. Le panafricanisme moderne dans le commerce.
               </p>
-              <div className="flex items-center gap-4 text-slate-400">
-                <a href="#" className="hover:text-white transition-colors" title="Changer de langue / Pays">
-                  <Globe className="w-4 h-4" />
+              <div className="flex items-center gap-5 text-slate-400">
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#1877F2] transition-colors" title="Suivez-nous sur Facebook" aria-label="Facebook">
+                  <ion-icon name="logo-facebook" style={{ fontSize: '22px' }}></ion-icon>
                 </a>
-                <a href="#" className="hover:text-white transition-colors" title="Partager le site">
-                  <Share2 className="w-4 h-4" />
-                </a>
-                <a href="#" className="hover:text-white transition-colors" title="Nous contacter">
-                  <Mail className="w-4 h-4" />
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#E4405F] transition-colors" title="Suivez-nous sur Instagram" aria-label="Instagram">
+                  <ion-icon name="logo-instagram" style={{ fontSize: '22px' }}></ion-icon>
                 </a>
               </div>
             </div>
@@ -315,5 +373,6 @@ export default function App() {
 
       </div>
     </Router>
+    </AuthProvider>
   );
 }

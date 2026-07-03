@@ -12,9 +12,38 @@ View your app in AI Studio: https://ai.studio/apps/3830c22a-96a0-4441-a952-0d3d3
 
 **Prerequisites:**  Node.js
 
-
 1. Install dependencies:
    `npm install`
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Détails des deux derniers commits
+
+### Commit `c4a54f8`
+- Message : `Ralph:Mes mises a jour de fin, modifications sur les publictés, et les formules boost`
+- Fichiers modifiés :
+  - `src/App.tsx`
+  - `src/components/SidebarAd.tsx`
+  - `src/page/Home.tsx`
+  - `src/page/dashboard/BoostPlans.tsx`
+  - `supabase_migration.sql`
+
+### Commit `60619ad`
+- Message : `mise a jour de la boutique et de la BD`
+- Fichiers modifiés :
+  - `.env.example`
+  - `README.md`
+  - `index.html`
+  - `src/App.tsx`
+  - `src/components/Header.tsx`
+  - `src/ion-icons.d.ts`
+  - `src/lib/cloudinary.ts`
+  - `src/lib/services.ts`
+  - `src/page/SellerPage.tsx`
+  - `src/page/dashboard/PublishProduct.tsx`
+  - `src/page/dashboard/SellerStats.tsx`
+  - `src/page/dashboard/StoreSettings.tsx`
+  - `supabase_migration.sql`
+
+# joyces

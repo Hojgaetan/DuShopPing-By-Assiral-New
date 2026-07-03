@@ -5,8 +5,10 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Bell, Heart, ChevronDown, Sparkles, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Search, Bell, Heart, ChevronDown, Sparkles, ShoppingBag, ArrowRight, Store } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '../context/AuthContext';
+import { fetchUserBoutique } from '../lib/services';
 
 interface HeaderProps {
   searchQuery: string;
@@ -47,8 +49,24 @@ export default function Header({
   onAddProductClick
 }: HeaderProps) {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [boutiqueLogo, setBoutiqueLogo] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && user.role === 'Vendeur') {
+      fetchUserBoutique(user.id).then(b => {
+        if (b && b.logo_url) {
+          setBoutiqueLogo(b.logo_url);
+        } else {
+          setBoutiqueLogo(null);
+        }
+      });
+    } else {
+      setBoutiqueLogo(null);
+    }
+  }, [user]);
   
   // Mega menu states
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
@@ -236,21 +254,84 @@ export default function Header({
             </div>
           </div>
 
-          {/* Visitor Auth Access Links */}
+          {/* Visitor Auth Access Links or User Menu */}
           <div className="flex items-center gap-4 shrink-0 font-sans" id="auth-visitor-links">
-            <button
-              onClick={() => alert("Connexion (Version Démo)")}
-              className="text-xs sm:text-sm font-bold text-slate-600 hover:text-[#02603c] transition-colors cursor-pointer"
-            >
-              Connexion
-            </button>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => alert("Inscription (Version Démo)")}
-              className="bg-[#02603c] text-white hover:bg-[#01482c] px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs cursor-pointer"
-            >
-              S'inscrire
-            </motion.button>
+            {user ? (
+              <div className="flex items-center gap-4">
+                <span className="hidden sm:block text-sm font-bold text-slate-700">
+                  {user.role === 'Vendeur' ? 'Compte Vendeur' : 'Acheteur'}
+                </span>
+
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="flex items-center gap-2 hover:bg-slate-50 p-1.5 rounded-full transition-colors cursor-pointer"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#02603c] text-white flex items-center justify-center font-bold text-sm overflow-hidden border-2 border-transparent hover:border-emerald-200 transition-colors">
+                      {boutiqueLogo ? (
+                        <img src={boutiqueLogo} alt="Logo" className="w-full h-full object-cover" />
+                      ) : (
+                        user.nom.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                  </button>
+
+                  <AnimatePresence>
+                    {showProfileMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50"
+                      >
+                        <div className="px-4 py-2 border-b border-slate-50">
+                          <p className="text-sm font-bold text-slate-800 truncate">{user.nom}</p>
+                          <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                        </div>
+                        {user.role === 'Vendeur' && (
+                          <button
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              navigate('/dashboard');
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 font-extrabold hover:bg-emerald-50 hover:text-[#02603c] transition-colors"
+                          >
+                            <Store className="w-4 h-4" />
+                            Ma Boutique
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            logout();
+                            setShowProfileMenu(false);
+                            navigate('/');
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
+                        >
+                          Déconnexion
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="text-xs sm:text-sm font-bold text-slate-600 hover:text-[#02603c] transition-colors cursor-pointer"
+                >
+                  Connexion
+                </button>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate('/register')}
+                  className="bg-[#02603c] text-white hover:bg-[#01482c] px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs cursor-pointer"
+                >
+                  S'inscrire
+                </motion.button>
+              </>
+            )}
           </div>
         </div>
       </div>

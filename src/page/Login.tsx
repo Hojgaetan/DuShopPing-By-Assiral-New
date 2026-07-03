@@ -23,7 +23,20 @@ export default function Login() {
       setIsLoading(false);
 
       if (result.success) {
-        navigate('/');
+        // Redirection intelligente selon le rôle
+        const savedSession = localStorage.getItem('dushop_session');
+        if (savedSession) {
+          const user = JSON.parse(savedSession);
+          if (user.role === 'Admin') {
+            navigate('/admin');
+          } else if (user.role === 'Vendeur') {
+            navigate('/dashboard');
+          } else {
+            navigate('/');
+          }
+        } else {
+          navigate('/');
+        }
       } else {
         setError(result.error || 'Erreur de connexion');
       }

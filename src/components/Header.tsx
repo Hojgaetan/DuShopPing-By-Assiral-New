@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Bell, Heart, ChevronDown, Sparkles, ShoppingBag, ArrowRight, Store } from 'lucide-react';
+import { Search, Bell, Heart, ChevronDown, Sparkles, ShoppingBag, ArrowRight, Store, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserBoutique } from '../lib/services';
@@ -259,7 +259,7 @@ export default function Header({
             {user ? (
               <div className="flex items-center gap-4">
                 <span className="hidden sm:block text-sm font-bold text-slate-700">
-                  {user.role === 'Vendeur' ? 'Compte Vendeur' : 'Acheteur'}
+                  {user.role === 'Admin' ? 'Administrateur' : user.role === 'Vendeur' ? 'Compte Vendeur' : 'Acheteur'}
                 </span>
 
                 <div className="relative">
@@ -267,7 +267,7 @@ export default function Header({
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className="flex items-center gap-2 hover:bg-slate-50 p-1.5 rounded-full transition-colors cursor-pointer"
                   >
-                    <div className="w-9 h-9 rounded-full bg-[#02603c] text-white flex items-center justify-center font-bold text-sm overflow-hidden border-2 border-transparent hover:border-emerald-200 transition-colors">
+                    <div className={`w-9 h-9 rounded-full ${user.role === 'Admin' ? 'bg-indigo-600' : 'bg-[#02603c]'} text-white flex items-center justify-center font-bold text-sm overflow-hidden border-2 border-transparent hover:border-emerald-200 transition-colors`}>
                       {boutiqueLogo ? (
                         <img src={boutiqueLogo} alt="Logo" className="w-full h-full object-cover" />
                       ) : (
@@ -298,6 +298,18 @@ export default function Header({
                           >
                             <Store className="w-4 h-4" />
                             Ma Boutique
+                          </button>
+                        )}
+                        {user.role === 'Admin' && (
+                          <button
+                            onClick={() => {
+                              setShowProfileMenu(false);
+                              navigate('/admin');
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 font-extrabold hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                          >
+                            <ShieldCheck className="w-4 h-4" />
+                            CMS Admin
                           </button>
                         )}
                         <button

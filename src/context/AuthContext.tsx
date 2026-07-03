@@ -6,7 +6,7 @@ export interface UserProfile {
   nom: string;
   email: string;
   telephone?: string;
-  role: 'Acheteur' | 'Vendeur';
+  role: 'Acheteur' | 'Vendeur' | 'Admin';
   boutiqueId?: string | null;
 }
 

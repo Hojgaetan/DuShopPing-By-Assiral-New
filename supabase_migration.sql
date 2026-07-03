@@ -302,17 +302,17 @@ CREATE TRIGGER on_auth_user_created
 -- Note: Permet d'avoir des catégories initiales prêtes à l'emploi.
 INSERT INTO public.categories (id, nom, icone_url)
 VALUES 
-    ('c1111111-1111-1111-1111-111111111111', 'Artisanat', 'Package'),
-    ('c2222222-2222-2222-2222-222222222222', 'Mode', 'Shirt'),
-    ('c3333333-3333-3333-3333-333333333333', 'Saveurs & Épicerie', 'Flame'),
-    ('c4444444-4444-4444-4444-444444444444', 'Cosmétiques', 'Sparkles')
+    ('11111111-1111-1111-1111-111111111111', 'Artisanat', 'Package'),
+    ('22222222-2222-2222-2222-222222222222', 'Mode', 'Shirt'),
+    ('33333333-3333-3333-3333-333333333333', 'Saveurs & Épicerie', 'Flame'),
+    ('44444444-4444-4444-4444-444444444444', 'Cosmétiques', 'Sparkles')
 ON CONFLICT (nom) DO NOTHING;
 
 INSERT INTO public.plan_sponsorisations (id, nom_plan, duree_en_jours, prix_unitaire, multiplicateur_visibilite)
 VALUES
-    ('p1111111-1111-1111-1111-111111111111', 'PLAN DE BASE', 7, 5000.00, 1.20),
-    ('p2222222-2222-2222-2222-222222222222', 'PLAN BOOST ÉLITE', 14, 15000.00, 1.80),
-    ('p3333333-3333-3333-3333-333333333333', 'PLAN IMPÉRIAL', 30, 35000.00, 2.50)
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'PLAN DE BASE', 7, 5000.00, 1.20),
+    ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'PLAN BOOST ÉLITE', 14, 15000.00, 1.80),
+    ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'PLAN IMPÉRIAL', 30, 35000.00, 2.50)
 ON CONFLICT DO NOTHING;
 
 

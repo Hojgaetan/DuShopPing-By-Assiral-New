@@ -28,6 +28,13 @@ import BoostPlans from './page/dashboard/BoostPlans';
 import SellerStats from './page/dashboard/SellerStats';
 import MyProducts from './page/dashboard/MyProducts';
 
+// Admin Routes
+import AdminLayout from './page/admin/AdminLayout';
+import AdminCategories from './page/admin/Categories';
+import AdminVendors from './page/admin/Vendors';
+import AdminSponsoringPlans from './page/admin/SponsoringPlans';
+import AdminAds from './page/admin/AdsManagement';
+
 // Context
 import { AuthProvider } from './context/AuthContext';
 
@@ -71,9 +78,9 @@ export default function App() {
         return {
           id: p.id,
           title: p.titre,
-          category: p.categorie_id === 'c1111111-1111-1111-1111-111111111111' ? 'Artisanat' :
-                    p.categorie_id === 'c2222222-2222-2222-2222-222222222222' ? 'Mode' :
-                    p.categorie_id === 'c3333333-3333-3333-3333-333333333333' ? 'Saveurs' : 'Cosmétiques',
+          category: p.categorie_id === '11111111-1111-1111-1111-111111111111' ? 'Artisanat' :
+                    p.categorie_id === '22222222-2222-2222-2222-222222222222' ? 'Mode' :
+                    p.categorie_id === '33333333-3333-3333-3333-333333333333' ? 'Saveurs' : 'Cosmétiques',
           price: p.prix,
           image: p.image_url || 'https://via.placeholder.com/300?text=Produit',
           seller: sellerName,
@@ -218,6 +225,14 @@ export default function App() {
               <Route path="publish" element={<PublishProduct />} />
               <Route path="boost" element={<BoostPlans />} />
               <Route path="stats" element={<SellerStats />} />
+            </Route>
+
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminCategories />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="vendors" element={<AdminVendors />} />
+              <Route path="sponsoring" element={<AdminSponsoringPlans />} />
+              <Route path="ads" element={<AdminAds />} />
             </Route>
           </Routes>
         </main>

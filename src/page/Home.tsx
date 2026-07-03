@@ -154,7 +154,7 @@ export default function Home({
       <div className="flex gap-6 items-start justify-center">
         {/* Left Vertical Ad Banner - 160x600 px */}
         <div className="hidden xl:block shrink-0 sticky top-[210px] self-start">
-          <SidebarAd position="left" />
+          <SidebarAd position="left" searchQuery={searchQuery} />
         </div>
 
         {/* Center feed containing rows */}
@@ -255,7 +255,7 @@ export default function Home({
 
               {/* Responsive Inline Ad 1 (visible only on mobile/tablet screens when the vertical sidebars are hidden) */}
               <div className="xl:hidden my-2">
-                <SidebarAd position="left" variant="horizontal" />
+                <SidebarAd position="left" variant="horizontal" searchQuery={searchQuery} />
               </div>
 
               {/* Row 2: Sélections Populaires */}
@@ -331,7 +331,7 @@ export default function Home({
 
               {/* Responsive Inline Ad 2 (visible only on mobile/tablet screens when the vertical sidebars are hidden) */}
               <div className="xl:hidden my-2">
-                <SidebarAd position="right" variant="horizontal" />
+                <SidebarAd position="right" variant="horizontal" searchQuery={searchQuery} />
               </div>
 
               {/* Row 4: Les Mieux Notés */}
@@ -410,7 +410,7 @@ export default function Home({
 
         {/* Right Vertical Ad Banner - 160x600 px */}
         <div className="hidden xl:block shrink-0 sticky top-[210px] self-start">
-          <SidebarAd position="right" />
+          <SidebarAd position="right" searchQuery={searchQuery} />
         </div>
       </div>
     </div>

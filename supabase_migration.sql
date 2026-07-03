@@ -314,3 +314,7 @@ VALUES
     ('p2222222-2222-2222-2222-222222222222', 'PLAN BOOST ÉLITE', 14, 15000.00, 1.80),
     ('p3333333-3333-3333-3333-333333333333', 'PLAN IMPÉRIAL', 30, 35000.00, 2.50)
 ON CONFLICT DO NOTHING;
+
+
+
+--dans le footer, fais que si on clique sur l'icone de facebook, ou instagram sa dirige vers les lien facebook.com ou instagram.com ,  dans la partie PUBLICITÉ que on vois dans ll'accueil il faut que si on clique sur parcourir ou découvrir, une popup doit s'afficher si l'utilisateur a deja créer sa boutique proposant a l'utilisateur de faire la publicité de ses produits quil post.  il devra choisi soit l'option boost automatisé, ou boost limité. Le boost automatiqué, sa va afficher les images de ses différents produits quil a poster soit a gauche soit a droite dans la partie publicité aux différents utilisateurs qui seront sur la partie home. et cela pendant 4s avec un bouton contacter en bas. L'option boost limité sa va afficher aussi de la meme façon mais seulement aux utulisateurs qui vont rechercher des produits similaires a ceux d'un vendeur. maintenant dans dashbord de l'utilisateur, fais en sorte que pour formule boost, si l'utilisateur choisi un formule, une popup apparait avec les information de la formule selectionner, si il clique sur ok, des pétar apparaissent on lui dit formule selectionner. 

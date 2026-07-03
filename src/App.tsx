@@ -253,10 +253,10 @@ export default function App() {
                     </button>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors">Promotions & Codes</a>
+                    <a href="/#promotions" onClick={(e) => { e.preventDefault(); alert("Page Promotions en cours de construction"); }} className="hover:text-emerald-450 transition-colors">Promotions & Codes</a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors">Foire aux questions (FAQ)</a>
+                    <a href="/#faq" onClick={(e) => { e.preventDefault(); alert("Page FAQ en cours de construction"); }} className="hover:text-emerald-450 transition-colors">Foire aux questions (FAQ)</a>
                   </li>
                 </ul>
               </div>
@@ -268,16 +268,16 @@ export default function App() {
                 </h4>
                 <ul className="space-y-2.5 text-xs sm:text-sm text-slate-400">
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors font-sans">Conditions d'utilisation</a>
+                    <a href="/#terms" onClick={(e) => { e.preventDefault(); alert("Conditions d'utilisation en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Conditions d'utilisation</a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors font-sans">Politique de confidentialité</a>
+                    <a href="/#privacy" onClick={(e) => { e.preventDefault(); alert("Politique de confidentialité en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Politique de confidentialité</a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors font-sans">Conseils aux acheteurs</a>
+                    <a href="/#tips" onClick={(e) => { e.preventDefault(); alert("Conseils aux acheteurs en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Conseils aux acheteurs</a>
                   </li>
                   <li>
-                    <a href="#" className="hover:text-emerald-450 transition-colors font-sans">Support Client</a>
+                    <a href="mailto:support@dushop.com" className="hover:text-emerald-450 transition-colors font-sans">Support Client</a>
                   </li>
                 </ul>
               </div>
@@ -324,10 +324,10 @@ export default function App() {
                 © 2024 Kazi & Mali. Le panafricanisme moderne dans le commerce.
               </p>
               <div className="flex items-center gap-5 text-slate-400">
-                <a href="#" className="hover:text-[#1877F2] transition-colors" title="Suivez-nous sur Facebook" aria-label="Facebook">
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#1877F2] transition-colors" title="Suivez-nous sur Facebook" aria-label="Facebook">
                   <ion-icon name="logo-facebook" style={{ fontSize: '22px' }}></ion-icon>
                 </a>
-                <a href="#" className="hover:text-[#E4405F] transition-colors" title="Suivez-nous sur Instagram" aria-label="Instagram">
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#E4405F] transition-colors" title="Suivez-nous sur Instagram" aria-label="Instagram">
                   <ion-icon name="logo-instagram" style={{ fontSize: '22px' }}></ion-icon>
                 </a>
               </div>

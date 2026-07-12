@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
 
-// Define the User Profile structure
+// Define the User Profile structure matching our Supabase public.utilisateurs table
 export interface UserProfile {
   id: string;
   nom: string;
@@ -8,116 +10,186 @@ export interface UserProfile {
   telephone?: string;
   role: 'Acheteur' | 'Vendeur' | 'Admin';
   boutiqueId?: string | null;
+  photo_profil_url?: string | null;
 }
 
 interface AuthContextType {
   user: UserProfile | null;
+  supabaseUser: User | null;
   loading: boolean;
-  login: (email: string, password: string) => { success: boolean; error?: string };
-  register: (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean }) => { success: boolean; error?: string };
-  logout: () => void;
-  updateUser: (data: Partial<UserProfile>) => void;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string, data: { nom: string; telephone?: string; role: 'Acheteur' | 'Vendeur' }) => Promise<{ success: boolean; error?: string }>;
+  signOut: () => Promise<void>;
+  updateUser: (data: Partial<UserProfile>) => Promise<void>;
+  // Legacy methods (mapping to new ones or kept for compatibility during migration)
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean }) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper functions for localStorage "database"
-function getStoredUsers(): Array<UserProfile & { password: string }> {
-  const raw = localStorage.getItem('dushop_users_db');
-  return raw ? JSON.parse(raw) : [];
-}
-
-function saveStoredUsers(users: Array<UserProfile & { password: string }>) {
-  localStorage.setItem('dushop_users_db', JSON.stringify(users));
-}
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session on mount
-  useEffect(() => {
-    const savedSession = localStorage.getItem('dushop_session');
-    if (savedSession) {
-      setUser(JSON.parse(savedSession));
+  // Function to fetch full profile from public.utilisateurs
+  const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('utilisateurs')
+        .select('*, vendeurs(boutiques(id))')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+
+      if (data) {
+        // Extraction sécurisée de l'ID de boutique selon la structure retournée par PostgREST
+        const vendeursData = Array.isArray(data.vendeurs) ? data.vendeurs[0] : data.vendeurs;
+        const boutiquesArray = vendeursData?.boutiques;
+        const boutiqueId = Array.isArray(boutiquesArray) ? boutiquesArray[0]?.id : boutiquesArray?.id;
+
+        // Map database response to UserProfile interface
+        return {
+          id: data.id,
+          nom: data.nom,
+          email: data.email,
+          telephone: data.telephone,
+          role: data.type_utilisateur as 'Acheteur' | 'Vendeur' | 'Admin',
+          boutiqueId: boutiqueId || null,
+          photo_profil_url: null
+        };
+      }
+      return null;
+    } catch (err) {
+      console.error('Unexpected error in fetchProfile:', err);
+      return null;
     }
-    setLoading(false);
-  }, []);
-
-  const login = (email: string, password: string): { success: boolean; error?: string } => {
-    const users = getStoredUsers();
-    const found = users.find(u => u.email === email && u.password === password);
-
-    if (!found) {
-      return { success: false, error: 'Email ou mot de passe incorrect.' };
-    }
-
-    const { password: _, ...profile } = found;
-    setUser(profile);
-    localStorage.setItem('dushop_session', JSON.stringify(profile));
-    return { success: true };
   };
 
-  const register = (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean }): { success: boolean; error?: string } => {
-    const users = getStoredUsers();
-
-    // Check if email already exists
-    if (users.find(u => u.email === data.email)) {
-      return { success: false, error: 'Un compte avec cet email existe déjà.' };
-    }
-
-    const newId = 'user-' + Date.now();
-    const boutiqueId = data.isVendeur ? 'boutique-' + Date.now() : null;
-
-    const newUser = {
-      id: newId,
-      nom: data.nom,
-      email: data.email,
-      telephone: data.telephone,
-      role: (data.isVendeur ? 'Vendeur' : 'Acheteur') as 'Vendeur' | 'Acheteur',
-      boutiqueId,
-      password: data.password,
+  // Restore session and listen for auth changes
+  useEffect(() => {
+    const initializeAuth = async () => {
+      // Get initial session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        setSupabaseUser(session.user);
+        const profile = await fetchProfile(session.user.id);
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
+      
+      setLoading(false);
     };
 
-    users.push(newUser);
-    saveStoredUsers(users);
+    initializeAuth();
 
-    // If vendor, also create a boutique entry
-    if (data.isVendeur && boutiqueId) {
-      const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
-      boutiques.push({
-        id: boutiqueId,
-        vendeur_id: newId,
-        nom: 'Ma Boutique',
-        description: '',
-        localisation: '',
-        logo_url: '',
-      });
-      localStorage.setItem('dushop_boutiques_db', JSON.stringify(boutiques));
-    }
-
-    const { password: _, ...profile } = newUser;
-    setUser(profile);
-    localStorage.setItem('dushop_session', JSON.stringify(profile));
-    return { success: true };
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('dushop_session');
-  };
-
-  const updateUser = (data: Partial<UserProfile>) => {
-    setUser(prev => {
-      if (!prev) return prev;
-      const updated = { ...prev, ...data };
-      localStorage.setItem('dushop_session', JSON.stringify(updated));
-      return updated;
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setSupabaseUser(session.user);
+        const profile = await fetchProfile(session.user.id);
+        setUser(profile);
+      } else {
+        setSupabaseUser(null);
+        setUser(null);
+      }
+      setLoading(true);
+      setLoading(false);
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string; role?: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { success: false, error: error.message };
+      return { success: true, role: data.user.user_metadata?.role };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Une erreur est survenue' };
+    }
+  };
+
+  const signUp = async (
+    email: string, 
+    password: string, 
+    data: { nom: string; telephone?: string; role: 'Acheteur' | 'Vendeur'; nom_boutique?: string; localisation?: string }
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            nom: data.nom,
+            telephone: data.telephone,
+            role: data.role,
+            nom_boutique: data.nom_boutique,
+            localisation: data.localisation
+          }
+        }
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Une erreur est survenue' };
+    }
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSupabaseUser(null);
+  };
+
+  // Legacy mappings
+  const login = signIn;
+  const register = async (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean; nomBoutique?: string; localisation?: string }): Promise<{ success: boolean; error?: string; role?: string }> => {
+    const result = await signUp(data.email, data.password, {
+      nom: data.nom,
+      telephone: data.telephone,
+      role: data.isVendeur ? 'Vendeur' : 'Acheteur',
+      nom_boutique: data.nomBoutique,
+      localisation: data.localisation
+    });
+    return { ...result, role: data.isVendeur ? 'Vendeur' : 'Acheteur' };
+  };
+  const logout = signOut;
+
+  const updateUser = async (data: Partial<UserProfile>) => {
+    // In a real Supabase app, we'd update the public.utilisateurs table
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('utilisateurs')
+        .update({
+          nom: data.nom,
+          telephone: data.telephone,
+          photo_profil_url: data.photo_profil_url
+        })
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      setUser(prev => prev ? { ...prev, ...data } : null);
+    } catch (err) {
+      console.error('Error updating profile:', err);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, supabaseUser, loading, signIn, signUp, signOut, updateUser, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

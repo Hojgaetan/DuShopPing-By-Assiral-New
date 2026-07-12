@@ -10,6 +10,12 @@
   --color-brand: #02603c;
   --color-brand-hover: #014c2f;
   --color-brand-dark: #003721;
+  
+  --color-accent-red: #cc0000;
+  --color-accent-red-hover: #a30000;
+  
+  --color-accent-yellow: #ffb800;
+  --color-accent-yellow-hover: #e6a600;
 }
 
 body {

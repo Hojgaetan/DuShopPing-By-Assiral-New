@@ -5,15 +5,15 @@
 
 import { X, Heart, MessageSquare, Trash2, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Product } from '../types';
+import { ProduitUI } from '../types';
 
 interface FavoritesDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  favorites: Product[];
+  favorites: ProduitUI[];
   onRemove: (id: string) => void;
-  onCallSeller: (product: Product) => void;
-  onChatSeller: (product: Product) => void;
+  onCallSeller: (product: ProduitUI) => void;
+  onChatSeller: (product: ProduitUI) => void;
 }
 
 export default function FavoritesDrawer({
@@ -91,8 +91,8 @@ export default function FavoritesDrawer({
                             className="flex gap-4 p-3 rounded-2xl border border-slate-100 bg-slate-50 relative group"
                           >
                             <img
-                              src={product.image}
-                              alt={product.title}
+                              src={product.images[0]}
+                              alt={product.titre}
                               className="w-20 h-20 rounded-xl object-cover bg-white shrink-0"
                             />
                             
@@ -100,7 +100,7 @@ export default function FavoritesDrawer({
                               <div>
                                 <div className="flex items-start justify-between gap-1.5">
                                   <h4 className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-1">
-                                    {product.title}
+                                    {product.titre}
                                   </h4>
                                   <button
                                     onClick={() => onRemove(product.id)}
@@ -110,12 +110,12 @@ export default function FavoritesDrawer({
                                     <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
-                                <p className="text-[10px] text-slate-400 mt-0.5">Par {product.seller}</p>
+                                <p className="text-[10px] text-slate-400 mt-0.5">Par {product.nom_boutique}</p>
                               </div>
 
                               <div className="flex items-center justify-between gap-2 mt-2">
                                 <span className="font-mono text-xs sm:text-sm font-bold text-brand">
-                                  {new Intl.NumberFormat('fr-FR').format(product.price)} F
+                                  {new Intl.NumberFormat('fr-FR').format(product.prix)} F
                                 </span>
                                 
                                 <div className="flex items-center gap-1.5">

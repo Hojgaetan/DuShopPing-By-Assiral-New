@@ -6,13 +6,13 @@
 import { useState } from 'react';
 import { X, Check, Copy, Phone, MapPin, BadgeCheck, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Product, Seller } from '../types';
+import { ProduitUI, VendeurUI } from '../types';
 import { SELLERS } from '../data';
 
 interface ContactModalProps {
-  product: Product | null;
+  product: ProduitUI | null;
   onClose: () => void;
-  onOpenChat: (product: Product) => void;
+  onOpenChat: (product: ProduitUI) => void;
 }
 
 export default function ContactModal({ product, onClose, onOpenChat }: ContactModalProps) {
@@ -21,19 +21,19 @@ export default function ContactModal({ product, onClose, onOpenChat }: ContactMo
 
   if (!product) return null;
 
-  const seller: Seller = SELLERS[product.seller] || {
-    name: product.seller,
+  const seller: VendeurUI = SELLERS[product.nom_boutique] || {
+    nom: product.nom_boutique,
     rating: 4.8,
     hasBadge: product.hasBadge,
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop&q=80',
-    phone: product.phoneNumber || '+221 77 000 00 00',
-    whatsapp: product.whatsappNumber || '+221770000000',
-    location: product.location || 'Dakar, Sénégal',
+    telephone: product.telephone_contact || '+221 77 000 00 00',
+    whatsapp: product.whatsapp_contact || '+221770000000',
+    localisation: product.localisation || 'Dakar, Sénégal',
     description: 'Vendeur de produits artisanaux sur DuShopPing.'
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(seller.phone);
+    navigator.clipboard.writeText(seller.telephone);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -77,19 +77,19 @@ export default function ContactModal({ product, onClose, onOpenChat }: ContactMo
             <div className="flex items-center gap-4">
               <img
                 src={seller.avatar}
-                alt={seller.name}
+                alt={seller.nom}
                 className="w-16 h-16 rounded-full object-cover border-2 border-white/40 shadow-md"
               />
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-display font-bold text-lg leading-tight">{seller.name}</h3>
+                  <h3 className="font-display font-bold text-lg leading-tight">{seller.nom}</h3>
                   {seller.hasBadge && (
                     <BadgeCheck className="w-5 h-5 text-emerald-200 fill-brand shrink-0" title="Vendeur certifié" />
                   )}
                 </div>
                 <p className="text-xs text-brand-light flex items-center gap-1 mt-1">
                   <MapPin className="w-3.5 h-3.5" />
-                  <span>{seller.location}</span>
+                  <span>{seller.localisation}</span>
                 </p>
               </div>
             </div>
@@ -112,25 +112,25 @@ export default function ContactModal({ product, onClose, onOpenChat }: ContactMo
                   Article d'intérêt
                 </span>
                 <span className="text-xs font-semibold text-brand bg-brand-light px-2.5 py-0.5 rounded-full">
-                  {product.category}
+                  {product.categorie_id}
                 </span>
               </div>
               <div className="flex gap-3">
                 <img
-                  src={product.image}
-                  alt={product.title}
+                  src={product.images[0]}
+                  alt={product.titre}
                   className="w-12 h-12 rounded-lg object-cover shrink-0"
                 />
                 <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-1">{product.title}</h4>
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-800 line-clamp-1">{product.titre}</h4>
                   <p className="text-xs font-bold text-slate-900 font-mono mt-0.5">
-                    {new Intl.NumberFormat('fr-FR').format(product.price)} FCFA
+                    {new Intl.NumberFormat('fr-FR').format(product.prix)} FCFA
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Seller Contact Trigger */}
+            {/* VendeurUI Contact Trigger */}
             <div className="space-y-3">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                 Coordonnées Directes
@@ -141,7 +141,7 @@ export default function ContactModal({ product, onClose, onOpenChat }: ContactMo
                 <div className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-brand" />
                   <span className="font-mono text-sm sm:text-base font-bold text-slate-800">
-                    {seller.phone}
+                    {seller.telephone}
                   </span>
                 </div>
                 <button
@@ -194,8 +194,8 @@ export default function ContactModal({ product, onClose, onOpenChat }: ContactMo
                 animate={{ opacity: 1, height: 'auto' }}
                 className="bg-emerald-50 text-emerald-800 border-l-4 border-emerald-500 rounded p-3 text-xs flex flex-col items-center justify-center text-center font-medium mt-2"
               >
-                <p className="animate-pulse">📞 Simulation d'appel vocal vers {seller.name}...</p>
-                <p className="text-[10px] text-slate-400 mt-1">Sur téléphone réel, cela composerait le {seller.phone}</p>
+                <p className="animate-pulse">📞 Simulation d'appel vocal vers {seller.nom}...</p>
+                <p className="text-[10px] text-slate-400 mt-1">Sur téléphone réel, cela composerait le {seller.telephone}</p>
               </motion.div>
             )}
           </div>

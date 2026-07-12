@@ -6,11 +6,11 @@
 import React, { useState, useRef, useEffect, FormEvent } from 'react';
 import { X, Send, MapPin, BadgeCheck, Phone, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Product, Message, Seller } from '../types';
+import { ProduitUI, Message, VendeurUI } from '../types';
 import { SELLERS } from '../data';
 
 interface ChatModalProps {
-  product: Product | null;
+  product: ProduitUI | null;
   onClose: () => void;
 }
 
@@ -21,21 +21,21 @@ export default function ChatModal({ product, onClose }: ChatModalProps) {
 
   if (!product) return null;
 
-  const seller: Seller = SELLERS[product.seller] || {
-    name: product.seller,
+  const seller: VendeurUI = SELLERS[product.nom_boutique] || {
+    nom: product.nom_boutique,
     rating: 4.8,
     hasBadge: product.hasBadge,
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop&q=80',
-    phone: product.phoneNumber || '+221 77 000 00 00',
-    whatsapp: product.whatsappNumber || '+221770000000',
-    location: product.location || 'Dakar, Sénégal',
+    telephone: product.telephone_contact || '+221 77 000 00 00',
+    whatsapp: product.whatsapp_contact || '+221770000000',
+    localisation: product.localisation || 'Dakar, Sénégal',
     description: 'Vendeur de produits artisanaux sur DuShopPing.'
   };
 
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: 'seller',
-      text: `Bonjour ! Merci pour votre intérêt pour mon produit "${product.title}". Il est actuellement disponible en stock. Souhaitez-vous le réserver ou planifier une livraison ou un appel ?`,
+      text: `Bonjour ! Merci pour votre intérêt pour mon produit "${product.titre}". Il est actuellement disponible en stock. Souhaitez-vous le réserver ou planifier une livraison ou un appel ?`,
       timestamp: 'Juste maintenant'
     }
   ]);
@@ -63,13 +63,13 @@ export default function ChatModal({ product, onClose }: ChatModalProps) {
     // Simulate smart seller response
     setTimeout(() => {
       setIsTyping(false);
-      let responseText = `Parfait ! C'est bien noté. Pour régler l'achat de "${product.title}" (${new Intl.NumberFormat('fr-FR').format(product.price)} FCFA), nous acceptons les paiements via Wave ou Orange Money, ou bien en espèces à la livraison. Qu'est-ce qui vous arrange le mieux ?`;
+      let responseText = `Parfait ! C'est bien noté. Pour régler l'achat de "${product.titre}" (${new Intl.NumberFormat('fr-FR').format(product.prix)} FCFA), nous acceptons les paiements via Wave ou Orange Money, ou bien en espèces à la livraison. Qu'est-ce qui vous arrange le mieux ?`;
       
       const lowerText = userMsg.text.toLowerCase();
       if (lowerText.includes('prix') || lowerText.includes('cher') || lowerText.includes('reduction') || lowerText.includes('rabais')) {
-        responseText = `Le prix de "${product.title}" est fixé équitablement à ${new Intl.NumberFormat('fr-FR').format(product.price)} FCFA pour rémunérer correctement nos artisans locaux. Je peux faire un geste de 5% si vous prenez un deuxième article !`;
+        responseText = `Le prix de "${product.titre}" est fixé équitablement à ${new Intl.NumberFormat('fr-FR').format(product.prix)} FCFA pour rémunérer correctement nos artisans locaux. Je peux faire un geste de 5% si vous prenez un deuxième article !`;
       } else if (lowerText.includes('livrer') || lowerText.includes('livraison') || lowerText.includes('envoi') || lowerText.includes('dakar')) {
-        responseText = `Absolument ! Nous livrons rapidement dans tout le secteur de ${seller.location.split(',')[0]} pour environ 1 500 FCFA de frais de coursier. Quel est votre quartier exact et votre numéro pour le chauffeur ?`;
+        responseText = `Absolument ! Nous livrons rapidement dans tout le secteur de ${seller.localisation.split(',')[0]} pour environ 1 500 FCFA de frais de coursier. Quel est votre quartier exact et votre numéro pour le chauffeur ?`;
       } else if (lowerText.includes('dispo') || lowerText.includes('disponible') || lowerText.includes('stock')) {
         responseText = `Oui, c'est bien disponible ! C'est une pièce unique fabriquée avec beaucoup de soin. Je peux vous l'emballer dès aujourd'hui.`;
       }
@@ -106,19 +106,19 @@ export default function ChatModal({ product, onClose }: ChatModalProps) {
             <div className="flex items-center gap-3">
               <img
                 src={seller.avatar}
-                alt={seller.name}
+                alt={seller.nom}
                 className="w-11 h-11 rounded-full object-cover border-2 border-white/20"
               />
               <div>
                 <div className="flex items-center gap-1">
-                  <h3 className="font-display font-bold text-sm sm:text-base leading-tight">{seller.name}</h3>
+                  <h3 className="font-display font-bold text-sm sm:text-base leading-tight">{seller.nom}</h3>
                   {seller.hasBadge && (
                     <BadgeCheck className="w-4.5 h-4.5 text-emerald-200 fill-brand shrink-0" />
                   )}
                 </div>
                 <p className="text-[10px] text-brand-light flex items-center gap-0.5">
                   <MapPin className="w-3 h-3" />
-                  <span>{seller.location}</span>
+                  <span>{seller.localisation}</span>
                 </p>
               </div>
             </div>
@@ -126,9 +126,9 @@ export default function ChatModal({ product, onClose }: ChatModalProps) {
             <div className="flex items-center gap-2">
               {/* Phone display tooltip badge */}
               <a 
-                href={`tel:${seller.phone}`}
+                href={`tel:${seller.telephone}`}
                 className="p-2 text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
-                title={`Appeler directement: ${seller.phone}`}
+                title={`Appeler directement: ${seller.telephone}`}
               >
                 <Phone className="w-4 h-4" />
               </a>
@@ -146,17 +146,17 @@ export default function ChatModal({ product, onClose }: ChatModalProps) {
           <div className="bg-slate-50 border-b border-slate-100 p-3 flex items-center justify-between gap-3 shrink-0 text-xs text-slate-600">
             <div className="flex items-center gap-2">
               <img
-                src={product.image}
-                alt={product.title}
+                src={product.images[0]}
+                alt={product.titre}
                 className="w-10 h-10 object-cover rounded-md"
               />
               <div>
-                <span className="font-bold text-slate-700">{product.title}</span>
-                <p className="text-slate-400 text-[10px] uppercase font-semibold">{product.category}</p>
+                <span className="font-bold text-slate-700">{product.titre}</span>
+                <p className="text-slate-400 text-[10px] uppercase font-semibold">{product.categorie_id}</p>
               </div>
             </div>
             <div className="font-mono font-bold text-brand text-right">
-              {new Intl.NumberFormat('fr-FR').format(product.price)} FCFA
+              {new Intl.NumberFormat('fr-FR').format(product.prix)} FCFA
             </div>
           </div>
 

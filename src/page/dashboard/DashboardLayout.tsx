@@ -4,8 +4,16 @@ import { Store, PackagePlus, BarChart3, Zap, Settings, ArrowLeft } from 'lucide-
 import { useAuth } from '../../context/AuthContext';
 
 export default function DashboardLayout() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+      </div>
+    );
+  }
 
   // Redirection de sécurité (simplifiée pour démo)
   if (!user || user.role !== 'Vendeur') {

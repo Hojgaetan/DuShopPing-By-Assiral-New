@@ -6,13 +6,13 @@
 import React, { useState, FormEvent } from 'react';
 import { X, Sparkles, Check, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Product } from '../types';
+import { ProduitUI } from '../types';
 import { IMAGES } from '../data';
 
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddProduct: (product: Product) => void;
+  onAddProduct: (product: ProduitUI) => void;
 }
 
 export default function AddProductModal({ isOpen, onClose, onAddProduct }: AddProductModalProps) {
@@ -37,7 +37,7 @@ export default function AddProductModal({ isOpen, onClose, onAddProduct }: AddPr
     e.preventDefault();
     if (!title.trim() || !price || !seller.trim()) return;
 
-    const newProduct: Product = {
+    const newProduct: ProduitUI = {
       id: `custom-${Date.now()}`,
       title,
       category,

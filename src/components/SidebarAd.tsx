@@ -18,6 +18,7 @@ interface SidebarAdProps {
 interface BoostedProduct {
   id: string;
   titre: string;
+  nom_boutique: string;
   image_url: string;
   prix: number;
   categorie_id: string;
@@ -210,7 +211,7 @@ export default function SidebarAd({ position, variant = 'vertical', searchQuery 
           {product.prix?.toLocaleString('fr-FR')} FCFA
         </p>
         <p className="text-[10px] text-slate-500 leading-normal mb-1">
-          Par <span className="font-semibold text-slate-700">{product.sellerName}</span>
+          Par <span className="font-semibold text-slate-700">{product.nom_boutique}</span>
         </p>
       </div>
 
@@ -262,7 +263,7 @@ export default function SidebarAd({ position, variant = 'vertical', searchQuery 
           </div>
           <h4 className="text-xs sm:text-sm font-bold text-slate-800 truncate">{product.titre}</h4>
           <p className="text-[10px] sm:text-xs text-slate-500">
-            {product.prix?.toLocaleString('fr-FR')} FCFA • <span className="font-semibold">{product.sellerName}</span>
+            {product.prix?.toLocaleString('fr-FR')} FCFA • <span className="font-semibold">{product.nom_boutique}</span>
           </p>
         </div>
       </div>
@@ -446,7 +447,7 @@ export default function SidebarAd({ position, variant = 'vertical', searchQuery 
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={handleCtaClick}
-                  className="w-full sm:w-auto bg-[#02603c] hover:bg-brand-hover text-white text-xs font-bold py-2 px-4 rounded-xl flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                  className="w-full sm:w-auto bg-brand hover:bg-brand-hover text-white text-xs font-bold py-2 px-4 rounded-xl flex items-center justify-center gap-1 shadow-xs cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span>{ad.cta}</span>
@@ -500,7 +501,7 @@ export default function SidebarAd({ position, variant = 'vertical', searchQuery 
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={handleCtaClick}
-                  className="w-full bg-[#02603c] hover:bg-brand-hover text-white text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                  className="w-full bg-brand hover:bg-brand-hover text-white text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1 shadow-xs cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span>{ad.cta}</span>

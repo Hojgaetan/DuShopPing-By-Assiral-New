@@ -46,7 +46,7 @@ export default function Banner728x90() {
         <div className="flex items-center justify-center gap-3 text-center max-w-3xl px-8">
           <Megaphone className="w-4 h-4 text-[#02603c] shrink-0 animate-bounce hidden sm:inline" />
           <p className="text-xs sm:text-sm font-medium text-blue-900 leading-tight">
-            <span className="font-bold text-[#02603c] mr-1.5">{ads[adIndex].title}:</span>
+            <span className="font-bold text-[#02603c] mr-1.5">{ads[adIndex].titre}:</span>
             {ads[adIndex].desc}
           </p>
           <button 

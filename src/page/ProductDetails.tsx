@@ -7,16 +7,16 @@ import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Phone, MessageSquare, Star, BadgeCheck, Heart, MapPin, ArrowLeft, Shield, Sparkles, AlertCircle } from 'lucide-react';
-import { Product } from '../types';
+import { ProduitUI } from '../types';
 import { ALL_PRODUCTS, SELLERS } from '../data';
 import ProductCard from '../components/ProductCard';
 
 interface ProductDetailsProps {
-  customProducts: Product[];
-  favorites: Product[];
+  customProducts: ProduitUI[];
+  favorites: ProduitUI[];
   handleToggleFavorite: (id: string) => void;
-  triggerCallSimulation: (product: Product) => void;
-  triggerChatSimulation: (product: Product) => void;
+  triggerCallSimulation: (product: ProduitUI) => void;
+  triggerChatSimulation: (product: ProduitUI) => void;
 }
 
 export default function ProductDetails({
@@ -62,14 +62,14 @@ export default function ProductDetails({
   }
 
   // Get matching seller details or fallback
-  const sellerInfo = SELLERS[product.seller] || {
-    name: product.seller,
+  const sellerInfo = SELLERS[product.nom_boutique] || {
+    nom: product.nom_boutique,
     rating: 4.8,
     hasBadge: product.hasBadge,
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&fit=crop&q=80',
-    phone: product.phoneNumber || '+237 600 00 00 00',
-    whatsapp: product.whatsappNumber || '237600000000',
-    location: product.location || 'Douala, Cameroun',
+    telephone: product.telephone_contact || '+237 600 00 00 00',
+    whatsapp: product.whatsapp_contact || '237600000000',
+    localisation: product.localisation || 'Douala, Cameroun',
     description: 'Vendeur vérifié de la communauté DuShopPing engagé pour la qualité locale.'
   };
 
@@ -77,7 +77,7 @@ export default function ProductDetails({
 
   // Find similar products in the same category (excluding current)
   const similarProducts = combined
-    .filter(p => p.category === product.category && p.id !== product.id)
+    .filter(p => p.categorie_id === product.categorie_id && p.id !== product.id)
     .slice(0, 3);
 
   return (
@@ -87,9 +87,9 @@ export default function ProductDetails({
         <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
           <Link to="/" className="hover:text-emerald-700 font-medium transition-colors">Accueil</Link>
           <span>/</span>
-          <Link to={`/category/${product.category}`} className="hover:text-emerald-700 font-medium transition-colors">{product.category}</Link>
+          <Link to={`/category/${product.categorie_id}`} className="hover:text-emerald-700 font-medium transition-colors">{product.categorie_id}</Link>
           <span>/</span>
-          <span className="text-slate-850 font-semibold truncate max-w-[150px] sm:max-w-[300px]">{product.title}</span>
+          <span className="text-slate-850 font-semibold truncate max-w-[150px] sm:max-w-[300px]">{product.titre}</span>
         </div>
         <button
           onClick={() => navigate(-1)}
@@ -107,8 +107,8 @@ export default function ProductDetails({
         <div className="md:col-span-5 space-y-4">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100/60 group/image">
             <img
-              src={product.image}
-              alt={product.title}
+              src={product.images[0]}
+              alt={product.titre}
               className="w-full h-full object-cover transition-all duration-500 group-hover/image:scale-105"
               referrerPolicy="no-referrer"
             />
@@ -150,18 +150,18 @@ export default function ProductDetails({
             
             {/* Category Title */}
             <span className="text-xs uppercase bg-emerald-50 text-emerald-800 font-extrabold px-3 py-1.5 rounded-lg border border-emerald-100 self-start inline-block">
-              {product.category}
+              {product.categorie_id}
             </span>
 
             {/* Main Title heading with layout flow */}
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display leading-tight">
-              {product.title}
+              {product.titre}
             </h1>
 
             {/* Price section */}
             <div className="flex items-baseline gap-2 py-2">
               <span className="text-3xl font-black font-display text-emerald-800">
-                {product.price.toLocaleString('fr-FR')} FCFA
+                {product.prix.toLocaleString('fr-FR')} FCFA
               </span>
               <span className="text-xs text-slate-400 font-normal">TVA incluse / Prix négociable</span>
             </div>
@@ -183,14 +183,14 @@ export default function ProductDetails({
               <div className="flex items-center gap-3">
                 <img
                   src={sellerInfo.avatar}
-                  alt={sellerInfo.name}
+                  alt={sellerInfo.nom}
                   className="w-12 h-12 rounded-xl object-cover border border-slate-200"
                   referrerPolicy="no-referrer"
                 />
                 <div>
                   <div className="flex items-center gap-1">
-                    <Link to={`/seller/${encodeURIComponent(sellerInfo.name)}`} className="font-bold text-sm text-slate-900 hover:text-emerald-700 hover:underline">
-                      {sellerInfo.name}
+                    <Link to={`/seller/${encodeURIComponent(sellerInfo.nom)}`} className="font-bold text-sm text-slate-900 hover:text-emerald-700 hover:underline">
+                      {sellerInfo.nom}
                     </Link>
                     {sellerInfo.hasBadge && (
                       <BadgeCheck className="w-4 h-4 text-emerald-600 fill-emerald-100" />
@@ -204,14 +204,14 @@ export default function ProductDetails({
                     <span>•</span>
                     <span className="flex items-center gap-0.5">
                       <MapPin className="w-3" />
-                      <span>{sellerInfo.location}</span>
+                      <span>{sellerInfo.localisation}</span>
                     </span>
                   </div>
                 </div>
               </div>
 
               <Link
-                to={`/seller/${encodeURIComponent(sellerInfo.name)}`}
+                to={`/seller/${encodeURIComponent(sellerInfo.nom)}`}
                 className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
               >
                 Visiter la Boutique
@@ -253,7 +253,7 @@ export default function ProductDetails({
               Vous aimerez aussi
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Articles similaires issus de la même catégorie ({product.category})
+              Articles similaires issus de la même catégorie ({product.categorie_id})
             </p>
           </div>
 

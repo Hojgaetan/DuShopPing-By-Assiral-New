@@ -22,10 +22,10 @@ interface HeaderProps {
 
 interface ProductVignette {
   id: string;
-  title: string;
-  price: number;
-  image: string;
-  seller: string;
+  titre: string;
+  prix: number;
+  images: string[];
+  nom_boutique: string;
 }
 
 interface Subcategory {
@@ -90,22 +90,22 @@ export default function Header({
         {
           name: 'Paniers & Vanneries',
           products: [
-            { id: 'une-1', title: 'Panier Tiss Premium', price: 29500, image: IMAGES.basket, seller: 'Amara Studio' },
-            { id: 'spon1-1', title: 'Vase Traditionnel', price: 27500, image: IMAGES.basket, seller: 'Savana Decor' }
+            { id: 'une-1', titre: 'Panier Tiss Premium', prix: 29500, images: [IMAGES.basket], nom_boutique: 'Amara Studio' },
+            { id: 'spon1-1', titre: 'Vase Traditionnel', prix: 27500, images: [IMAGES.basket], nom_boutique: 'Savana Decor' }
           ]
         },
         {
           name: 'Poteries & Céramiques',
           products: [
-            { id: 'pop-1', title: 'Vase en Terre Cuite', price: 23000, image: IMAGES.basket, seller: 'Amara Studio' },
-            { id: 'une-3', title: 'Statuette Bronze Royale', price: 98400, image: IMAGES.vases, seller: 'Mama Africa' }
+            { id: 'pop-1', titre: 'Vase en Terre Cuite', prix: 23000, images: [IMAGES.basket], nom_boutique: 'Amara Studio' },
+            { id: 'une-3', titre: 'Statuette Bronze Royale', prix: 98400, images: [IMAGES.vases], nom_boutique: 'Mama Africa' }
           ]
         },
         {
           name: 'Sculptures d\'Afrique',
           products: [
-            { id: 'notes-1', title: 'Statuette Bronze', price: 78700, image: IMAGES.vases, seller: 'Mama Africa' },
-            { id: 'spon2-1', title: 'Masque Tribal', price: 55800, image: IMAGES.vases, seller: 'Benin Arts' }
+            { id: 'notes-1', titre: 'Statuette Bronze', prix: 78700, images: [IMAGES.vases], nom_boutique: 'Mama Africa' },
+            { id: 'spon2-1', titre: 'Masque Tribal', prix: 55800, images: [IMAGES.vases], nom_boutique: 'Benin Arts' }
           ]
         }
       ]
@@ -117,21 +117,21 @@ export default function Header({
         {
           name: 'Tuniques & Vestes',
           products: [
-            { id: 'une-2', title: 'Tunique Indigo Artisanale', price: 42600, image: IMAGES.hoodie, seller: 'Kente Masters' },
-            { id: 'pop-2', title: 'Tunique Brodée', price: 36000, image: IMAGES.hoodie, seller: 'Kente Masters' }
+            { id: 'une-2', titre: 'Tunique Indigo Artisanale', prix: 42600, images: [IMAGES.hoodie], nom_boutique: 'Kente Masters' },
+            { id: 'pop-2', titre: 'Tunique Brodée', prix: 36000, images: [IMAGES.hoodie], nom_boutique: 'Kente Masters' }
           ]
         },
         {
           name: 'Boubous & Caftans',
           products: [
-            { id: 'spon1-2', title: 'Boubou Indigo', price: 51200, image: IMAGES.hoodie, seller: 'Loom Heritage' }
+            { id: 'spon1-2', titre: 'Boubou Indigo', prix: 51200, images: [IMAGES.hoodie], nom_boutique: 'Loom Heritage' }
           ]
         },
         {
           name: 'Écharpes & Étoffes',
           products: [
-            { id: 'notes-3', title: 'Écharpe en Soie', price: 26200, image: IMAGES.silk, seller: 'Dushop General Seller' },
-            { id: 'spon2-3', title: 'Soie de Tana', price: 32000, image: IMAGES.silk, seller: 'Dushop General Seller' }
+            { id: 'notes-3', titre: 'Écharpe en Soie', prix: 26200, images: [IMAGES.silk], nom_boutique: 'Dushop General Seller' },
+            { id: 'spon2-3', titre: 'Soie de Tana', prix: 32000, images: [IMAGES.silk], nom_boutique: 'Dushop General Seller' }
           ]
         }
       ]
@@ -143,13 +143,13 @@ export default function Header({
         {
           name: 'Épices Rares',
           products: [
-            { id: 'notes-2', title: 'Épices Berbère', price: 5600, image: IMAGES.spices, seller: 'Épices du Sahel' }
+            { id: 'notes-2', titre: 'Épices Berbère', prix: 5600, images: [IMAGES.spices], nom_boutique: 'Épices du Sahel' }
           ]
         },
         {
           name: 'Assortiments & Coffrets',
           products: [
-            { id: 'spon2-2', title: 'Coffret Épices', price: 16400, image: IMAGES.spices, seller: 'Épices du Sahel' }
+            { id: 'spon2-2', titre: 'Coffret Épices', prix: 16400, images: [IMAGES.spices], nom_boutique: 'Épices du Sahel' }
           ]
         }
       ]
@@ -161,14 +161,14 @@ export default function Header({
         {
           name: 'Miels Purs d\'Altitude',
           products: [
-            { id: 'pop-3-variant', title: 'Miel Pur 1kg', price: 12100, image: IMAGES.cosmetics, seller: 'Miel d\'Or' },
-            { id: 'pop-3', title: 'Miel de Forêt', price: 7900, image: IMAGES.cosmetics, seller: 'Miel d\'Or' }
+            { id: 'pop-3-variant', titre: 'Miel Pur 1kg', prix: 12100, images: [IMAGES.cosmetics], nom_boutique: 'Miel d\'Or' },
+            { id: 'pop-3', titre: 'Miel de Forêt', prix: 7900, images: [IMAGES.cosmetics], nom_boutique: 'Miel d\'Or' }
           ]
         },
         {
           name: 'Cosmétiques de la Ruche',
           products: [
-            { id: 'pop-3', title: 'Miel de Forêt Cosme', price: 7900, image: IMAGES.cosmetics, seller: 'Miel d\'Or' }
+            { id: 'pop-3', titre: 'Miel de Forêt Cosme', prix: 7900, images: [IMAGES.cosmetics], nom_boutique: 'Miel d\'Or' }
           ]
         }
       ]
@@ -218,11 +218,14 @@ export default function Header({
                 setSelectedCategory('Tous'); 
                 navigate('/');
               }}
-              className="text-2xl sm:text-3xl font-extrabold font-display text-[#02603c] flex items-center gap-1.5 cursor-pointer select-none"
+              className="cursor-pointer select-none"
               id="brand-logo"
             >
-              <ShoppingBag className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.5] text-[#02603c]" />
-              <span>DuShopPing</span>
+              <img 
+                src="/src/assets/images/logo-Dushopping.jpeg" 
+                alt="DuShopPing Logo" 
+                className="h-12 sm:h-14 w-auto object-contain" 
+              />
             </motion.div>
           </div>
 
@@ -267,7 +270,7 @@ export default function Header({
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className="flex items-center gap-2 hover:bg-slate-50 p-1.5 rounded-full transition-colors cursor-pointer"
                   >
-                    <div className={`w-9 h-9 rounded-full ${user.role === 'Admin' ? 'bg-indigo-600' : 'bg-[#02603c]'} text-white flex items-center justify-center font-bold text-sm overflow-hidden border-2 border-transparent hover:border-emerald-200 transition-colors`}>
+                    <div className={`w-9 h-9 rounded-full ${user.role === 'Admin' ? 'bg-indigo-600' : 'bg-brand'} text-white flex items-center justify-center font-bold text-sm overflow-hidden border-2 border-transparent hover:border-emerald-200 transition-colors`}>
                       {boutiqueLogo ? (
                         <img src={boutiqueLogo} alt="Logo" className="w-full h-full object-cover" />
                       ) : (
@@ -294,7 +297,7 @@ export default function Header({
                               setShowProfileMenu(false);
                               navigate('/dashboard');
                             }}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 font-extrabold hover:bg-emerald-50 hover:text-[#02603c] transition-colors"
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 font-extrabold hover:bg-emerald-50 hover:text-brand transition-colors"
                           >
                             <Store className="w-4 h-4" />
                             Ma Boutique
@@ -331,14 +334,14 @@ export default function Header({
               <>
                 <button
                   onClick={() => navigate('/login')}
-                  className="text-xs sm:text-sm font-bold text-slate-600 hover:text-[#02603c] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm font-bold text-slate-600 hover:text-brand transition-colors cursor-pointer"
                 >
                   Connexion
                 </button>
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={() => navigate('/register')}
-                  className="bg-[#02603c] text-white hover:bg-[#01482c] px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs cursor-pointer"
+                  className="bg-accent-yellow text-slate-900 hover:bg-accent-yellow-hover px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs cursor-pointer"
                 >
                   S'inscrire
                 </motion.button>
@@ -374,7 +377,7 @@ export default function Header({
                       }}
                       className={`px-1 py-2 text-xs sm:text-sm font-extrabold transition-all flex items-center gap-1 cursor-pointer border-b-2 h-full ${
                         isActive
-                          ? 'border-[#02603c] text-[#02603c]'
+                          ? 'border-brand text-brand'
                           : 'border-transparent text-slate-650 hover:text-slate-900'
                       }`}
                     >
@@ -411,12 +414,12 @@ export default function Header({
                                     }}
                                     className={`w-full text-left px-4 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-250 flex items-center justify-between border ${
                                       hoveredSubcategory === sub.name
-                                        ? 'bg-emerald-50/40 text-[#02603c] border-emerald-100 shadow-xs'
+                                        ? 'bg-emerald-50/40 text-brand border-emerald-100 shadow-xs'
                                         : 'text-slate-600 border-transparent hover:bg-slate-50 hover:text-slate-900'
                                     }`}
                                   >
                                     <span>{sub.name}</span>
-                                    <ArrowRight className={`w-3.5 h-3.5 transition-transform duration-300 ${hoveredSubcategory === sub.name ? 'translate-x-1 text-[#02603c]' : 'text-slate-350'}`} />
+                                    <ArrowRight className={`w-3.5 h-3.5 transition-transform duration-300 ${hoveredSubcategory === sub.name ? 'translate-x-1 text-brand' : 'text-slate-350'}`} />
                                   </button>
                                 ))}
                               </div>
@@ -447,20 +450,20 @@ export default function Header({
                                       {/* Product Image */}
                                       <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 shadow-xs">
                                         <img
-                                          src={prod.image}
-                                          alt={prod.title}
+                                          src={prod.images[0]}
+                                          alt={prod.titre}
                                           className="w-full h-full object-cover transition-transform duration-500 group-hover/vignette:scale-108"
                                           referrerPolicy="no-referrer"
                                         />
                                       </div>
                                       {/* Product text metadata */}
                                       <div className="min-w-0 flex-1 space-y-1">
-                                        <h5 className="text-xs sm:text-sm font-extrabold text-slate-800 truncate group-hover/vignette:text-[#02603c] transition-colors">
-                                          {prod.title}
+                                        <h5 className="text-xs sm:text-sm font-extrabold text-slate-800 truncate group-hover/vignette:text-brand transition-colors">
+                                          {prod.titre}
                                         </h5>
-                                        <p className="text-[10px] text-slate-400 truncate">{prod.seller}</p>
+                                        <p className="text-[10px] text-slate-400 truncate">{prod.nom_boutique}</p>
                                         <p className="text-xs font-black text-emerald-800 font-mono">
-                                          {prod.price.toLocaleString('fr-FR')} FCFA
+                                          {prod.prix.toLocaleString('fr-FR')} FCFA
                                         </p>
                                       </div>
                                     </Link>
@@ -480,7 +483,7 @@ export default function Header({
                                   setSelectedCategory(cat.value);
                                   setHoveredCategory(null);
                                 }}
-                                className="text-xs font-black text-[#02603c] hover:underline flex items-center gap-1.5 shrink-0 bg-emerald-50/65 px-4 py-2 rounded-xl transition-all hover:bg-emerald-100"
+                                className="text-xs font-black text-brand hover:underline flex items-center gap-1.5 shrink-0 bg-emerald-50/65 px-4 py-2 rounded-xl transition-all hover:bg-emerald-100"
                               >
                                 <span>Explorer tout le rayon {cat.label}</span>
                                 <ArrowRight className="w-3.5 h-3.5" />

@@ -7,17 +7,17 @@ import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Star, MapPin, BadgeCheck, Phone, Mail, Globe, ArrowRight, HelpCircle } from 'lucide-react';
-import { Product } from '../types';
+import { ProduitUI } from '../types';
 import { ALL_PRODUCTS, SELLERS } from '../data';
 import ProductCard from '../components/ProductCard';
 import { incrementBoutiqueVues } from '../lib/services';
 
 interface SellerPageProps {
-  customProducts: Product[];
-  favorites: Product[];
+  customProducts: ProduitUI[];
+  favorites: ProduitUI[];
   handleToggleFavorite: (id: string) => void;
-  triggerCallSimulation: (product: Product) => void;
-  triggerChatSimulation: (product: Product) => void;
+  triggerCallSimulation: (product: ProduitUI) => void;
+  triggerChatSimulation: (product: ProduitUI) => void;
 }
 
 export default function SellerPage({
@@ -48,19 +48,19 @@ export default function SellerPage({
 
   // Get matching seller details or fallback
   const sellerInfo = SELLERS[decodedName] || {
-    name: decodedName,
+    nom: decodedName,
     rating: 4.8,
     hasBadge: true,
     avatar: realBoutique?.logo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop&q=80',
-    phone: '+237 600 00 00 00',
+    telephone: '+237 600 00 00 00',
     whatsapp: '237600000000',
-    location: 'Douala, Cameroun',
+    localisation: 'Douala, Cameroun',
     description: realBoutique?.description || 'Artisan et créateur de la vitrine locale, engagé dans la promotion équitable des talents du continent camerounais.'
   };
 
   // Find all products by seller
   const combined = [...customProducts, ...ALL_PRODUCTS];
-  const sellerProducts = combined.filter(p => p.seller.toLowerCase() === decodedName.toLowerCase());
+  const sellerProducts = combined.filter(p => p.nom_boutique.toLowerCase() === decodedName.toLowerCase());
 
   return (
     <div className="space-y-8" id="seller-profile-view">
@@ -119,7 +119,7 @@ export default function SellerPage({
                 <span className="hidden sm:inline">•</span>
                 <span className="flex items-center gap-1">
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span>{sellerInfo.location}</span>
+                  <span>{sellerInfo.localisation}</span>
                 </span>
               </div>
             </div>

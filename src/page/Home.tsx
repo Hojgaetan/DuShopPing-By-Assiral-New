@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import SidebarAd from '../components/SidebarAd';
 import SupabaseMigrationConsole from '../components/SupabaseMigrationConsole';
-import { Product } from '../types';
+import { ProduitUI } from '../types';
 import {
   PRODUCTS_A_LA_UNE as initialFeatured,
   SELECTIONS_POPULAIRES as initialPopular,
@@ -23,11 +23,11 @@ interface HomeProps {
   setSearchQuery: (val: string) => void;
   selectedCategory: string;
   setSelectedCategory: (val: string) => void;
-  customProducts: Product[];
-  favorites: Product[];
+  customProducts: ProduitUI[];
+  favorites: ProduitUI[];
   handleToggleFavorite: (id: string) => void;
-  triggerCallSimulation: (product: Product) => void;
-  triggerChatSimulation: (product: Product) => void;
+  triggerCallSimulation: (product: ProduitUI) => void;
+  triggerChatSimulation: (product: ProduitUI) => void;
 }
 
 export default function Home({
@@ -47,42 +47,42 @@ export default function Home({
   const [highlyRatedPage, setHighlyRatedPage] = useState(0);
 
   // Dynamic filter products
-  const getFeaturedProducts = () => {
+  const getFeaturedProduitUIs = () => {
     const list = [...customProducts.filter(p => p.isSponsorised && p.sponsorisedTag === 'SPONSORISÉ'), ...initialFeatured];
     if (selectedCategory !== 'Tous') {
-      return list.filter(p => p.category === selectedCategory);
+      return list.filter(p => p.categorie_id === selectedCategory);
     }
     return list;
   };
 
-  const getPopularProducts = () => {
+  const getPopularProduitUIs = () => {
     const list = [...initialPopular];
     if (selectedCategory !== 'Tous') {
-      return list.filter(p => p.category === selectedCategory);
+      return list.filter(p => p.categorie_id === selectedCategory);
     }
     return list;
   };
 
-  const getSponsorised1Products = () => {
+  const getSponsorised1ProduitUIs = () => {
     const list = [...initialSponsorised1];
     if (selectedCategory !== 'Tous') {
-      return list.filter(p => p.category === selectedCategory);
+      return list.filter(p => p.categorie_id === selectedCategory);
     }
     return list;
   };
 
-  const getHighlyRatedProducts = () => {
+  const getHighlyRatedProduitUIs = () => {
     const list = [...initialHighlyRated];
     if (selectedCategory !== 'Tous') {
-      return list.filter(p => p.category === selectedCategory);
+      return list.filter(p => p.categorie_id === selectedCategory);
     }
     return list;
   };
 
-  const getSponsorised2Products = () => {
+  const getSponsorised2ProduitUIs = () => {
     const list = [...initialSponsorised2];
     if (selectedCategory !== 'Tous') {
-      return list.filter(p => p.category === selectedCategory);
+      return list.filter(p => p.categorie_id === selectedCategory);
     }
     return list;
   };
@@ -99,17 +99,17 @@ export default function Home({
       ...initialSponsorised2
     ];
 
-    const uniqueMap = new Map<string, Product>();
+    const uniqueMap = new Map<string, ProduitUI>();
     combined.forEach(p => uniqueMap.set(p.id, p));
     const uniqueList = Array.from(uniqueMap.values());
 
     return uniqueList.filter(p => {
       const matchSearch =
-        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.seller.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase());
+        p.titre.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.nom_boutique.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.categorie_id.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchCat = selectedCategory === 'Tous' || p.category === selectedCategory;
+      const matchCat = selectedCategory === 'Tous' || p.categorie_id === selectedCategory;
       return matchSearch && matchCat;
     });
   };
@@ -226,7 +226,7 @@ export default function Home({
                     </button>
                     <button
                       onClick={() => setFeaturedPage(p => p + 1)}
-                      disabled={getFeaturedProducts().length <= (featuredPage + 1) * 3}
+                      disabled={getFeaturedProduitUIs().length <= (featuredPage + 1) * 3}
                       className="p-1 px-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                     >
                       <ChevronRight className="w-4 h-4 text-slate-600" />
@@ -234,11 +234,11 @@ export default function Home({
                   </div>
                 </div>
 
-                {getFeaturedProducts().length === 0 ? (
+                {getFeaturedProduitUIs().length === 0 ? (
                   <p className="text-xs text-slate-400">Aucun produit en vedette.</p>
                 ) : (
                   <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {getFeaturedProducts().slice(featuredPage * 3, (featuredPage * 3) + 3).map(product => (
+                    {getFeaturedProduitUIs().slice(featuredPage * 3, (featuredPage * 3) + 3).map(product => (
                       <ProductCard
                         key={product.id}
                         product={product}
@@ -280,7 +280,7 @@ export default function Home({
                     </button>
                     <button
                       onClick={() => setPopularPage(p => p + 1)}
-                      disabled={getPopularProducts().length <= (popularPage + 1) * 3}
+                      disabled={getPopularProduitUIs().length <= (popularPage + 1) * 3}
                       className="p-1 px-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                     >
                       <ChevronRight className="w-4 h-4 text-slate-600" />
@@ -289,7 +289,7 @@ export default function Home({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {getPopularProducts().slice(popularPage * 3, (popularPage * 3) + 3).map(product => (
+                  {getPopularProduitUIs().slice(popularPage * 3, (popularPage * 3) + 3).map(product => (
                     <ProductCard
                       key={product.id}
                       product={product}
@@ -315,7 +315,7 @@ export default function Home({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {getSponsorised1Products().map(product => (
+                  {getSponsorised1ProduitUIs().map(product => (
                     <ProductCard
                       key={product.id}
                       product={product}
@@ -356,7 +356,7 @@ export default function Home({
                     </button>
                     <button
                       onClick={() => setHighlyRatedPage(p => p + 1)}
-                      disabled={getHighlyRatedProducts().length <= (highlyRatedPage + 1) * 3}
+                      disabled={getHighlyRatedProduitUIs().length <= (highlyRatedPage + 1) * 3}
                       className="p-1 px-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
                     >
                       <ChevronRight className="w-4 h-4 text-slate-600" />
@@ -365,7 +365,7 @@ export default function Home({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {getHighlyRatedProducts().slice(highlyRatedPage * 3, (highlyRatedPage * 3) + 3).map(product => (
+                  {getHighlyRatedProduitUIs().slice(highlyRatedPage * 3, (highlyRatedPage * 3) + 3).map(product => (
                     <ProductCard
                       key={product.id}
                       product={product}
@@ -391,7 +391,7 @@ export default function Home({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {getSponsorised2Products().map(product => (
+                  {getSponsorised2ProduitUIs().map(product => (
                     <ProductCard
                       key={product.id}
                       product={product}

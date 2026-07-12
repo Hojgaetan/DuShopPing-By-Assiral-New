@@ -39,7 +39,7 @@ import AdminAds from './page/admin/AdsManagement';
 import { AuthProvider } from './context/AuthContext';
 
 // Types and Data
-import { Product } from './types';
+import { ProduitUI } from './types';
 import { ALL_PRODUCTS } from './data';
 import { Check } from 'lucide-react';
 
@@ -48,21 +48,21 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tous');
   
-  const [customProducts, setCustomProducts] = useState<Product[]>([]);
-  const [favorites, setFavorites] = useState<Product[]>([]);
+  const [customProducts, setCustomProducts] = useState<ProduitUI[]>([]);
+  const [favorites, setFavorites] = useState<ProduitUI[]>([]);
   
   const [showFavorites, setShowFavorites] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   
-  const [contactProduct, setContactProduct] = useState<Product | null>(null);
-  const [chatProduct, setChatProduct] = useState<Product | null>(null);
+  const [contactProduct, setContactProduct] = useState<ProduitUI | null>(null);
+  const [chatProduct, setChatProduct] = useState<ProduitUI | null>(null);
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
 
 
   // Add customized items from Sell wizard
-  const handleAddProduct = (newProd: Product) => {
+  const handleAddProduct = (newProd: ProduitUI) => {
     setCustomProducts(prev => [newProd, ...prev]);
   };
 
@@ -71,19 +71,22 @@ export default function App() {
       const dbProduits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
       const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
       
-      const mapped: Product[] = dbProduits.map((p: any) => {
+      const mapped: ProduitUI[] = dbProduits.map((p: any) => {
         const boutique = boutiques.find((b: any) => b.id === p.boutique_id);
         const sellerName = boutique ? boutique.nom : 'Boutique Indépendante';
         
         return {
           id: p.id,
-          title: p.titre,
-          category: p.categorie_id === '11111111-1111-1111-1111-111111111111' ? 'Artisanat' :
+          boutique_id: p.boutique_id,
+          nom_boutique: sellerName,
+          titre: p.titre,
+          categorie_id: p.categorie_id === '11111111-1111-1111-1111-111111111111' ? 'Artisanat' :
                     p.categorie_id === '22222222-2222-2222-2222-222222222222' ? 'Mode' :
                     p.categorie_id === '33333333-3333-3333-3333-333333333333' ? 'Saveurs' : 'Cosmétiques',
-          price: p.prix,
-          image: p.image_url || 'https://via.placeholder.com/300?text=Produit',
-          seller: sellerName,
+          prix: p.prix,
+          images: [p.image_url || 'https://via.placeholder.com/300?text=Produit'],
+          datePublication: p.date_publication || new Date().toISOString(),
+          statut: p.statut || 'Actif',
           hasBadge: false,
           isSponsorised: false,
           description: p.description
@@ -124,12 +127,12 @@ export default function App() {
     }, 4000);
   };
 
-  const triggerCallSimulation = (product: Product) => {
+  const triggerCallSimulation = (product: ProduitUI) => {
     setContactProduct(product);
     import('./lib/services').then(m => m.incrementProductClics(product.id));
   };
 
-  const triggerChatSimulation = (product: Product) => {
+  const triggerChatSimulation = (product: ProduitUI) => {
     setChatProduct(product);
     import('./lib/services').then(m => m.incrementProductClics(product.id));
   };
@@ -323,7 +326,7 @@ export default function App() {
                     />
                     <button
                       type="submit"
-                      className="bg-[#02603c] hover:bg-emerald-750 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer"
+                      className="bg-accent-yellow hover:bg-accent-yellow-hover text-slate-900 font-bold px-3.5 py-2.5 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer"
                     >
                       Rejoindre
                     </button>
@@ -336,7 +339,7 @@ export default function App() {
             {/* Social icons & copyright */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
               <p className="text-center sm:text-left">
-                © 2024 Kazi & Mali. Le panafricanisme moderne dans le commerce.
+                © 2026 DuShopPing. Tous droits reservés.
               </p>
               <div className="flex items-center gap-5 text-slate-400">
                 <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#1877F2] transition-colors" title="Suivez-nous sur Facebook" aria-label="Facebook">

@@ -6,41 +6,35 @@ import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    // Small delay for UX
-    setTimeout(() => {
-      const result = login(email, password);
-      setIsLoading(false);
-
+    try {
+      const result = await login(email, password);
+      
       if (result.success) {
-        // Redirection intelligente selon le rôle
-        const savedSession = localStorage.getItem('dushop_session');
-        if (savedSession) {
-          const user = JSON.parse(savedSession);
-          if (user.role === 'Admin') {
-            navigate('/admin');
-          } else if (user.role === 'Vendeur') {
-            navigate('/dashboard');
-          } else {
-            navigate('/');
-          }
+        // Redirection selon le rôle récupéré depuis Supabase Auth
+        if (result.role === 'Vendeur') {
+          navigate('/dashboard');
         } else {
           navigate('/');
         }
       } else {
-        setError(result.error || 'Erreur de connexion');
+        setError(result.error || 'Email ou mot de passe incorrect.');
+        setIsLoading(false);
       }
-    }, 500);
+    } catch (err: any) {
+      setError(err.message || 'Erreur de connexion');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -64,7 +58,7 @@ export default function Login() {
             className="mx-auto h-16 w-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 cursor-pointer"
             onClick={() => navigate('/')}
           >
-            <ShoppingBag className="w-8 h-8 text-[#02603c] stroke-[2.5]" />
+            <ShoppingBag className="w-8 h-8 text-brand stroke-[2.5]" />
           </motion.div>
           <h2 className="text-3xl font-extrabold text-slate-900 font-display">
             Bon retour !
@@ -99,7 +93,7 @@ export default function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#02603c] focus:border-transparent transition-all sm:text-sm bg-slate-50/50 focus:bg-white"
+                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:text-sm bg-slate-50/50 focus:bg-white"
                   placeholder="vous@exemple.com"
                 />
               </div>
@@ -110,7 +104,7 @@ export default function Login() {
                 <label htmlFor="password" className="block text-sm font-bold text-slate-700">
                   Mot de passe
                 </label>
-                <a href="#" className="text-xs font-bold text-[#02603c] hover:text-emerald-700 transition-colors">
+                <a href="#" className="text-xs font-bold text-brand hover:text-emerald-700 transition-colors">
                   Mot de passe oublié ?
                 </a>
               </div>
@@ -126,7 +120,7 @@ export default function Login() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#02603c] focus:border-transparent transition-all sm:text-sm bg-slate-50/50 focus:bg-white"
+                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:text-sm bg-slate-50/50 focus:bg-white"
                   placeholder="••••••••"
                 />
               </div>
@@ -139,7 +133,7 @@ export default function Login() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-extrabold rounded-xl text-white bg-[#02603c] hover:bg-[#01482c] focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-[#02603c] transition-all shadow-md overflow-hidden"
+              className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-extrabold rounded-xl text-white bg-brand hover:bg-brand-hover focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand transition-all shadow-md overflow-hidden"
             >
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                 <Lock className="h-5 w-5 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
@@ -163,7 +157,7 @@ export default function Login() {
           </div>
 
           <div className="mt-6 text-center">
-            <Link to="/register" className="text-sm font-extrabold text-[#02603c] hover:text-emerald-700 transition-colors">
+            <Link to="/register" className="text-sm font-extrabold text-brand hover:text-emerald-700 transition-colors">
               Créer un compte maintenant
             </Link>
           </div>

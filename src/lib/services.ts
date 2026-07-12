@@ -1,102 +1,200 @@
-// Services locaux utilisant localStorage comme base de données
-// Prêt à être remplacé par Supabase quand les clés seront configurées
+import { supabase } from './supabase';
+import { Boutique, Produit, Paiement, CampagneBoost } from '../types';
+
+// ============================================================================
+// SERVICES SUPABASE (Remplaçant l'ancien localStorage)
+// Les données sont traduites pour garder la compatibilité avec l'UI actuelle
+// ============================================================================
 
 export async function fetchUserBoutique(vendeurId: string) {
-  const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
-  return boutiques.find((b: any) => b.vendeur_id === vendeurId) || null;
+  const { data, error } = await supabase
+    .from('boutiques')
+    .select('*')
+    .eq('vendeur_id', vendeurId)
+    .single();
+
+  // PGRST116 signifie qu'aucune ligne n'a été trouvée, ce qui est normal si la boutique n'existe pas encore
+  if (error && error.code !== 'PGRST116') {
+    console.error('Erreur lors de la récupération de la boutique:', error);
+    return null;
+  }
+
+  // Compatibilité ascendante avec l'ancien format
+  if (data) {
+    return {
+      id: data.id,
+      vendeur_id: data.vendeur_id,
+      nom: data.nom,
+      description: data.description,
+      logo_url: data.logo_url,
+      localisation: data.localisation,
+    };
+  }
+  
+  return null;
 }
 
 export async function createOrUpdateBoutique(vendeurId: string, boutiqueData: any) {
-  const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
-  const index = boutiques.findIndex((b: any) => b.vendeur_id === vendeurId);
+  const payload = {
+    vendeur_id: vendeurId,
+    nom: boutiqueData.nom,
+    description: boutiqueData.description,
+    localisation: boutiqueData.localisation || '',
+    logo_url: boutiqueData.logo_url || boutiqueData.logoUrl || '',
+    statut_moderation: 'Approuvee' // Simplification temporaire pour le frontend
+  };
 
-  if (index >= 0) {
-    boutiques[index] = { ...boutiques[index], ...boutiqueData };
-  } else {
-    boutiques.push({ id: 'boutique-' + Date.now(), vendeur_id: vendeurId, ...boutiqueData });
+  const { data, error } = await supabase
+    .from('boutiques')
+    .update(payload)
+    .eq('vendeur_id', vendeurId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Erreur création/mise à jour boutique:', error);
+    throw error;
   }
 
-  localStorage.setItem('dushop_boutiques_db', JSON.stringify(boutiques));
-  return boutiques[index >= 0 ? index : boutiques.length - 1];
+  return {
+    id: data.id,
+    vendeur_id: data.vendeur_id,
+    nom: data.nom,
+    description: data.description,
+    logo_url: data.logo_url,
+    localisation: data.localisation,
+  };
 }
 
 export async function checkPublishingQuota(boutiqueId: string) {
-  const produits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
-  const count = produits.filter((p: any) => p.boutique_id === boutiqueId).length;
-  return { used: count, max: 5 };
+  // On vérifie dynamiquement le nombre de produits de cette boutique
+  const { count, error } = await supabase
+    .from('produits')
+    .select('*', { count: 'exact', head: true })
+    .eq('boutique_id', boutiqueId);
+
+  if (error) {
+    console.error('Erreur lors de la vérification du quota:', error);
+    return { used: 0, max: 5 };
+  }
+
+  return { used: count || 0, max: 5 };
 }
 
 export async function createProduct(boutiqueId: string, productData: any) {
-  const produits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
-  
-  const newProduct = {
-    id: 'prod-' + Date.now(),
+  const { data, error } = await supabase
+    .from('produits')
+    .insert([{
+      boutique_id: boutiqueId,
+      categorie_id: productData.categorie_id || '11111111-1111-1111-1111-111111111111', // ID statique fallback
+      titre: productData.titre,
+      description: productData.description,
+      prix: productData.prix,
+      images: productData.image_url ? [productData.image_url] : [],
+      statut: 'Actif'
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Erreur lors de la création du produit:', error);
+    throw error;
+  }
+
+  // Compatibilité UI : renvoi au format attendu par les états React
+  return {
+    id: data.id,
     boutique_id: boutiqueId,
-    titre: productData.titre,
-    description: productData.description,
-    prix: productData.prix,
-    categorie_id: productData.categorie_id,
-    image_url: productData.image_url || '',
-    telephone_contact: productData.telephone_contact || '',
-    date_publication: new Date().toISOString(),
-    statut: 'Actif',
+    titre: data.titre,
+    description: data.description,
+    prix: data.prix,
+    categorie_id: data.categorie_id,
+    image_url: data.images && data.images.length > 0 ? data.images[0] : '',
+    date_publication: data.date_publication,
+    statut: data.statut,
     vues: 0,
     clics_contact: 0,
   };
-
-  produits.push(newProduct);
-  localStorage.setItem('dushop_produits_db', JSON.stringify(produits));
-  return newProduct;
 }
 
 export async function subscribeToBoost(boutiqueId: string, planId: string, operateur: 'MoMo' | 'OM', numero: string, montant: number) {
-  const paiements = JSON.parse(localStorage.getItem('dushop_paiements_db') || '[]');
+  // 1. Récupérer le vendeur_id à partir de la boutique
+  const { data: boutique } = await supabase
+    .from('boutiques')
+    .select('vendeur_id')
+    .eq('id', boutiqueId)
+    .single();
 
-  const paiement = {
-    id: 'pay-' + Date.now(),
-    boutique_id: boutiqueId,
-    plan_id: planId,
-    reference_transaction: `TXN-${Date.now()}`,
-    montant,
-    operateur,
-    numero,
-    statut: 'Reussi',
-    date: new Date().toISOString(),
-  };
+  if (!boutique) {
+    return { success: false, error: "Boutique introuvable" };
+  }
 
-  paiements.push(paiement);
-  localStorage.setItem('dushop_paiements_db', JSON.stringify(paiements));
+  // 2. Créer le paiement dans Supabase
+  const { data: paiement, error: paymentError } = await supabase
+    .from('paiements')
+    .insert([{
+      vendeur_id: boutique.vendeur_id,
+      reference_transaction: `TXN-${Date.now()}`,
+      montant: montant,
+      operateur: operateur,
+      statut: 'Reussi'
+    }])
+    .select()
+    .single();
+
+  if (paymentError) {
+    console.error('Erreur lors du paiement:', paymentError);
+    return { success: false, error: paymentError.message };
+  }
+
   return { success: true, transactionId: paiement.reference_transaction };
 }
 
 export async function getSellerStats(boutiqueId: string) {
-  const produits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
-  const mesProduits = produits.filter((p: any) => p.boutique_id === boutiqueId);
-  const totalClics = mesProduits.reduce((acc: number, p: any) => acc + (p.clics_contact || 0), 0);
+  // Récupération des stats via la table statistiques_interactions
+  const { data: statsData, error: statsError } = await supabase
+    .from('statistiques_interactions')
+    .select('type_action')
+    .eq('boutique_id', boutiqueId);
 
-  const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
-  const boutique = boutiques.find((b: any) => b.id === boutiqueId);
+  let clics = 0;
+  let vuesBoutique = 0;
+
+  if (!statsError && statsData) {
+    clics = statsData.filter(s => s.type_action === 'ClicWhatsApp' || s.type_action === 'AppelDirect').length;
+    vuesBoutique = statsData.filter(s => s.type_action === 'VueProfil').length;
+  }
 
   return {
-    vuesBoutique: boutique ? (boutique.vues || 0) : 0,
-    clics: totalClics,
+    vuesBoutique,
+    clics,
   };
 }
 
 export async function incrementBoutiqueVues(boutiqueId: string) {
-  const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
-  const index = boutiques.findIndex((b: any) => b.id === boutiqueId);
-  if (index >= 0) {
-    boutiques[index].vues = (boutiques[index].vues || 0) + 1;
-    localStorage.setItem('dushop_boutiques_db', JSON.stringify(boutiques));
-  }
+  await supabase
+    .from('statistiques_interactions')
+    .insert([{
+      boutique_id: boutiqueId,
+      type_action: 'VueProfil',
+      adresse_ip: 'CLIENT_IP' // En vrai géré par RLS
+    }]);
 }
 
 export async function incrementProductClics(productId: string) {
-  const produits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
-  const index = produits.findIndex((p: any) => p.id === productId);
-  if (index >= 0) {
-    produits[index].clics_contact = (produits[index].clics_contact || 0) + 1;
-    localStorage.setItem('dushop_produits_db', JSON.stringify(produits));
-  }
+  // Pour un clic produit, on cherche d'abord la boutique associée (optionnel mais utile pour les stats)
+  const { data: produit } = await supabase
+    .from('produits')
+    .select('boutique_id')
+    .eq('id', productId)
+    .single();
+
+  await supabase
+    .from('statistiques_interactions')
+    .insert([{
+      produit_id: productId,
+      boutique_id: produit?.boutique_id || null,
+      type_action: 'ClicWhatsApp', // ou AppelDirect
+      adresse_ip: 'CLIENT_IP'
+    }]);
 }

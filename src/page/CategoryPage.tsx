@@ -6,16 +6,16 @@
 import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, HelpCircle } from 'lucide-react';
-import { Product } from '../types';
+import { ProduitUI } from '../types';
 import { ALL_PRODUCTS } from '../data';
 import ProductCard from '../components/ProductCard';
 
 interface CategoryPageProps {
-  customProducts: Product[];
-  favorites: Product[];
+  customProducts: ProduitUI[];
+  favorites: ProduitUI[];
   handleToggleFavorite: (id: string) => void;
-  triggerCallSimulation: (product: Product) => void;
-  triggerChatSimulation: (product: Product) => void;
+  triggerCallSimulation: (product: ProduitUI) => void;
+  triggerChatSimulation: (product: ProduitUI) => void;
 }
 
 export default function CategoryPage({
@@ -39,7 +39,7 @@ export default function CategoryPage({
   
   // Filter products by category
   const filteredProducts = combined.filter(p => 
-    categoryDecoded === 'Tous' || p.category.toLowerCase() === categoryDecoded.toLowerCase()
+    categoryDecoded === 'Tous' || p.categorie_id.toLowerCase() === categoryDecoded.toLowerCase()
   );
 
   return (

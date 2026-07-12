@@ -7,16 +7,16 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, MessageSquare, Star, BadgeCheck, Heart, MapPin } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Product } from '../types';
+import { ProduitUI } from '../types';
 
 interface ProductCardProps {
   key?: any;
-  product: Product;
+  product: ProduitUI;
   variant: 'detailed' | 'minimal';
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
-  onCallSeller: (product: Product) => void;
-  onChatSeller: (product: Product) => void;
+  onCallSeller: (product: ProduitUI) => void;
+  onChatSeller: (product: ProduitUI) => void;
 }
 
 export default function ProductCard({
@@ -75,8 +75,8 @@ export default function ProductCard({
         {/* Image frame */}
         <div className="aspect-[4/3] bg-slate-50 w-full overflow-hidden relative group">
           <img
-            src={product.image}
-            alt={product.title}
+            src={product.images[0]}
+            alt={product.titre}
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -92,10 +92,10 @@ export default function ProductCard({
                 className="flex items-center gap-1 font-semibold text-slate-800 hover:text-emerald-750 hover:underline"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/seller/${encodeURIComponent(product.seller)}`);
+                  navigate(`/seller/${encodeURIComponent(product.nom_boutique)}`);
                 }}
               >
-                <span className="truncate max-w-[120px]">{product.seller}</span>
+                <span className="truncate max-w-[120px]">{product.nom_boutique}</span>
                 {product.hasBadge && (
                   <BadgeCheck className="w-4 h-4 text-emerald-600 shrink-0" title="Vendeur Vérifié" />
                 )}
@@ -114,14 +114,14 @@ export default function ProductCard({
 
             {/* Product Title */}
             <h3 className="font-display font-medium text-slate-900 text-sm sm:text-base line-clamp-1 mb-1">
-              {product.title}
+              {product.titre}
             </h3>
 
             {/* Location (if any) */}
-            {product.location && (
+            {product.localisation && (
               <p className="text-[10px] text-slate-400 flex items-center gap-0.5 mb-1.5">
                 <MapPin className="w-3 h-3 text-slate-300" />
-                <span>{product.location}</span>
+                <span>{product.localisation}</span>
               </p>
             )}
           </div>
@@ -129,7 +129,7 @@ export default function ProductCard({
           <div>
             {/* Price section */}
             <div className="text-lg sm:text-xl font-bold text-slate-900 font-mono tracking-tight mb-3">
-              {formatPrice(product.price)}
+              {formatPrice(product.prix)}
             </div>
 
             {/* Action Buttons as requested */}
@@ -187,8 +187,8 @@ export default function ProductCard({
         {/* Large backplane pricing as watermark effect if requested, or clean product aspect ratio */}
         <div className="aspect-[4/3] bg-slate-50 overflow-hidden relative group">
           <img
-            src={product.image}
-            alt={product.title}
+            src={product.images[0]}
+            alt={product.titre}
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
           />
@@ -197,10 +197,10 @@ export default function ProductCard({
             className="absolute bottom-2 left-2 bg-black/40 hover:bg-black/65 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-white font-semibold z-10"
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/seller/${encodeURIComponent(product.seller)}`);
+              navigate(`/seller/${encodeURIComponent(product.nom_boutique)}`);
             }}
           >
-            {product.seller}
+            {product.nom_boutique}
           </div>
         </div>
 
@@ -208,19 +208,19 @@ export default function ProductCard({
         <div className="p-3.5 flex flex-col flex-grow justify-between gap-2 bg-slate-50/40">
           <div>
             {/* Category */}
-            <p className="text-[10px] font-semibold text-[#02603c] tracking-widest uppercase mb-0.5">
-              {product.category}
+            <p className="text-[10px] font-semibold text-brand tracking-widest uppercase mb-0.5">
+              {product.categorie_id}
             </p>
             {/* Title */}
             <h4 className="text-slate-800 font-display font-semibold text-xs sm:text-sm leading-tight line-clamp-1">
-              {product.title}
+              {product.titre}
             </h4>
           </div>
 
           {/* Price with interaction icons directly aligned inline */}
           <div className="flex items-center justify-between border-t border-slate-100 pt-2.5">
             <span className="text-xs sm:text-sm font-bold text-slate-900 font-mono">
-              {formatPrice(product.price)}
+              {formatPrice(product.prix)}
             </span>
             <div className="flex items-center gap-1 text-slate-400">
               <button

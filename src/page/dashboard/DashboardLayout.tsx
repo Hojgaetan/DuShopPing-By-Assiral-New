@@ -52,26 +52,26 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          <nav className="space-y-1.5">
+          <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible scrollbar-hide pb-2 md:pb-0">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                  `flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl text-xs md:text-sm font-bold transition-all shrink-0 ${
                     isActive
                       ? 'bg-[#02603c] text-white shadow-md'
                       : 'text-slate-600 hover:bg-emerald-50 hover:text-[#02603c]'
                   }`
                 }
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className="w-4 h-4 md:w-5 md:h-5" />
                 {item.name}
               </NavLink>
             ))}
           </nav>
 
-          <div className="mt-8 pt-6 border-t border-slate-100">
+          <div className="mt-4 md:mt-8 pt-4 md:pt-6 border-t border-slate-100">
             <button
               onClick={() => navigate('/')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 transition-all w-full"

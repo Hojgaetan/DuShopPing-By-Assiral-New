@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Bell, Heart, ChevronDown, Sparkles, ShoppingBag, ArrowRight, Store, ShieldCheck } from 'lucide-react';
+import { Search, Bell, Heart, ChevronDown, Sparkles, ShoppingBag, ArrowRight, Store, ShieldCheck, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserBoutique } from '../lib/services';
@@ -71,6 +71,10 @@ export default function Header({
   // Mega menu states
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [hoveredSubcategory, setHoveredSubcategory] = useState<string | null>(null);
+
+  // Mobile states
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   // Hardcoded real images referencing the exact public asset paths to avoid broken assets page
   const IMAGES = {
@@ -229,8 +233,8 @@ export default function Header({
             </motion.div>
           </div>
 
-          {/* Centered Search Bar */}
-          <div className="flex-1 max-w-xl mx-2 sm:mx-6 md:mx-12">
+          {/* Centered Search Bar (Desktop) */}
+          <div className="flex-1 max-w-xl mx-2 sm:mx-6 md:mx-12 hidden md:block">
             <div className="relative">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
                 <Search className="w-4 h-4" />
@@ -258,10 +262,19 @@ export default function Header({
           </div>
 
           {/* Visitor Auth Access Links or User Menu */}
-          <div className="flex items-center gap-4 shrink-0 font-sans" id="auth-visitor-links">
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0 font-sans" id="auth-visitor-links">
+            
+            {/* Mobile Search Toggle */}
+            <button 
+              className="md:hidden p-2 text-slate-600 hover:text-brand"
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
             {user ? (
-              <div className="flex items-center gap-4">
-                <span className="hidden sm:block text-sm font-bold text-slate-700">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <span className="hidden lg:block text-sm font-bold text-slate-700">
                   {user.role === 'Admin' ? 'Administrateur' : user.role === 'Vendeur' ? 'Compte Vendeur' : 'Acheteur'}
                 </span>
 
@@ -334,25 +347,71 @@ export default function Header({
               <>
                 <button
                   onClick={() => navigate('/login')}
-                  className="text-xs sm:text-sm font-bold text-slate-600 hover:text-brand transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm font-bold text-slate-600 hover:text-brand transition-colors cursor-pointer hidden sm:block"
                 >
                   Connexion
                 </button>
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={() => navigate('/register')}
-                  className="bg-accent-yellow text-slate-900 hover:bg-accent-yellow-hover px-4.5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs cursor-pointer"
+                  className="bg-accent-yellow text-slate-900 hover:bg-accent-yellow-hover px-3 py-2 sm:px-4.5 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs cursor-pointer"
                 >
                   S'inscrire
                 </motion.button>
               </>
             )}
+
+            {/* Mobile Menu Toggle */}
+            <button 
+              className="md:hidden p-2 -mr-2 text-slate-600 hover:text-brand"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+            >
+              {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Search Bar Dropdown */}
+        <AnimatePresence>
+          {showMobileSearch && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="md:hidden overflow-hidden border-t border-slate-100 bg-slate-50"
+            >
+              <div className="p-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
+                    <Search className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      navigate('/');
+                    }}
+                    placeholder="Rechercher..."
+                    className="w-full text-sm pl-9 pr-14 py-3 bg-white border border-slate-200 focus:bg-white focus:ring-2 focus:ring-brand focus:border-brand rounded-xl placeholder:text-slate-400 transition-all text-slate-800"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute inset-y-0 right-3 flex items-center text-xs text-rose-500 hover:text-rose-700 font-bold cursor-pointer"
+                    >
+                      Effacer
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* LEVEL 2: Mega Menu & Category Navigation level */}
-      <div className="bg-[#fcfdff] border-b border-slate-100/90 relative" id="bottom-header-row">
+      {/* LEVEL 2: Mega Menu & Category Navigation level (Desktop) */}
+      <div className="bg-[#fcfdff] border-b border-slate-100/90 relative hidden md:block" id="bottom-header-row">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-center relative">
           
           {/* List of categories with interactive hover */}
@@ -502,7 +561,85 @@ export default function Header({
           </div>
         </div>
       </div>
-      
+      {/* Mobile Hamburger Menu (Categories & Links) */}
+      <AnimatePresence>
+        {showMobileMenu && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="md:hidden overflow-y-auto max-h-[80vh] border-b border-slate-100 bg-white"
+          >
+            <div className="p-4 space-y-4">
+              {/* Category list */}
+              <div>
+                <h3 className="text-xs font-black text-slate-400 tracking-wider uppercase mb-3">Catégories</h3>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('Tous');
+                      setSearchQuery('');
+                      setShowMobileMenu(false);
+                      navigate('/');
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-extrabold transition-all flex items-center justify-between ${
+                      selectedCategory === 'Tous'
+                        ? 'bg-emerald-50 text-brand'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Toutes les catégories
+                  </button>
+                  {megaCategories.map((cat) => (
+                    <button
+                      key={cat.value}
+                      onClick={() => {
+                        setSelectedCategory(cat.value);
+                        setSearchQuery('');
+                        setShowMobileMenu(false);
+                        navigate('/');
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-xl text-sm font-extrabold transition-all flex items-center justify-between ${
+                        selectedCategory === cat.value
+                          ? 'bg-emerald-50 text-brand'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <hr className="border-slate-100" />
+              
+              {/* Mobile Auth/Profile Actions */}
+              {!user && (
+                <div className="flex flex-col gap-2 pt-2 pb-4">
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      navigate('/login');
+                    }}
+                    className="w-full bg-slate-50 text-slate-700 py-3 rounded-xl text-sm font-bold border border-slate-200"
+                  >
+                    Connexion
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      navigate('/register');
+                    }}
+                    className="w-full bg-accent-yellow text-slate-900 py-3 rounded-xl text-sm font-extrabold"
+                  >
+                    S'inscrire
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

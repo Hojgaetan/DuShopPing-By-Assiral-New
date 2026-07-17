@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PackagePlus, AlertTriangle, ArrowRight, Zap, CheckCircle2, ImagePlus, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { checkPublishingQuota, createProduct } from '../../lib/services';
+import { checkPublishingQuota, createProduct, fetchCategories } from '../../lib/services';
+import { Categorie } from '../../types';
 import { uploadToCloudinary } from '../../lib/cloudinary';
 
 export default function PublishProduct() {
@@ -13,13 +14,22 @@ export default function PublishProduct() {
   const [quota, setQuota] = useState({ used: 0, max: 0 });
   const [loadingQuota, setLoadingQuota] = useState(true);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    titre: string;
+    description: string;
+    prix: string;
+    categorie_id: string;
+    sous_categorie: string;
+    images: string[];
+    telephone_contact: string;
+  }>({
     titre: '',
     description: '',
     prix: '',
-    categorie_id: 'c1111111-1111-1111-1111-111111111111', // Artisanat par défaut
-    image_url: '',
-    telephone_contact: '',
+    categorie_id: '',
+    sous_categorie: '',
+    images: ['', '', ''],
+    telephone_contact: '+237 ',
   });
   
   const [publishing, setPublishing] = useState(false);
@@ -28,6 +38,8 @@ export default function PublishProduct() {
   const [uploadError, setUploadError] = useState('');
 
   const isQuotaExceeded = quota.used >= quota.max;
+
+  const [dbCategories, setDbCategories] = useState<Categorie[]>([]);
 
   useEffect(() => {
     if (user?.boutiqueId) {
@@ -38,13 +50,28 @@ export default function PublishProduct() {
     } else {
       setLoadingQuota(false);
     }
+    fetchCategories().then(data => setDbCategories(data));
   }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    if (!val.startsWith('+237 ')) {
+      if (val.startsWith('+237')) {
+        val = '+237 ' + val.substring(4).trim();
+      } else {
+        val = '+237 ';
+      }
+    }
+    const prefix = '+237 ';
+    const rest = val.substring(prefix.length).replace(/[^0-9\s]/g, '');
+    setFormData(prev => ({ ...prev, telephone_contact: prefix + rest }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -53,7 +80,11 @@ export default function PublishProduct() {
 
     try {
       const result = await uploadToCloudinary(file, 'dushoppping/produits');
-      setFormData(prev => ({ ...prev, image_url: result.secure_url }));
+      setFormData(prev => {
+        const newImages = [...prev.images];
+        newImages[index] = result.secure_url;
+        return { ...prev, images: newImages };
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur lors de l\'upload de l\'image.';
       setUploadError(message);
@@ -62,6 +93,16 @@ export default function PublishProduct() {
       setUploading(false);
     }
   };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => {
+      const newImages = [...prev.images];
+      newImages[index] = '';
+      return { ...prev, images: newImages };
+    });
+  };
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +120,7 @@ export default function PublishProduct() {
       setTimeout(() => {
         setQuota(prev => ({ ...prev, used: prev.used + 1 }));
         setSuccess(false);
-        setFormData(prev => ({ ...prev, titre: '', description: '', prix: '', image_url: '' }));
+        setFormData(prev => ({ ...prev, titre: '', description: '', prix: '', images: ['', '', ''], categorie_id: '', sous_categorie: '' }));
       }, 2000);
     } catch (err) {
       console.error(err);
@@ -155,45 +196,54 @@ export default function PublishProduct() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Photo principale de l'article</label>
-              <div className="flex flex-col items-center justify-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-56 border-2 border-slate-200 border-dashed rounded-2xl cursor-pointer bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 transition-colors relative overflow-hidden group">
-                  {uploading ? (
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
-                        <Loader2 className="w-8 h-8 text-[#02603c] animate-spin" />
-                      </div>
-                      <p className="mb-2 text-sm text-slate-700 font-bold">Upload en cours sur Cloudinary...</p>
-                      <p className="text-xs text-slate-400">Veuillez patienter</p>
-                    </div>
-                  ) : formData.image_url ? (
-                    <>
-                      <img src={formData.image_url} alt="Aperçu" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-white font-bold text-sm bg-black/50 px-4 py-2 rounded-xl backdrop-blur-md">Changer la photo</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4">
-                        <ImagePlus className="w-8 h-8 text-[#02603c]" />
-                      </div>
-                      <p className="mb-2 text-sm text-slate-700 font-bold">Cliquez pour sélectionner une image</p>
-                      <p className="text-xs text-slate-400">Fichiers supportés : PNG, JPG, WEBP (Max. 5 Mo)</p>
-                    </div>
-                  )}
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    disabled={uploading}
-                    onChange={handleImageUpload} 
-                  />
-                </label>
-                {uploadError && (
-                  <p className="text-xs text-rose-600 mt-2 font-semibold w-full text-center">{uploadError}</p>
-                )}
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Photos de l'article (1 à 3)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+                {[0, 1, 2].map((index) => (
+                  <div key={index} className="flex flex-col items-center justify-center w-full relative">
+                    <label className={`flex flex-col items-center justify-center w-full aspect-[4/3] border-2 border-slate-200 border-dashed rounded-2xl cursor-pointer bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 transition-colors relative overflow-hidden group ${index === 0 && !formData.images[0] ? 'ring-2 ring-emerald-100 ring-offset-2' : ''}`}>
+                      {uploading && formData.images[index] === 'uploading' ? (
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Loader2 className="w-8 h-8 text-[#02603c] animate-spin mb-2" />
+                          <p className="text-xs text-slate-500 font-bold">Upload...</p>
+                        </div>
+                      ) : formData.images[index] ? (
+                        <>
+                          <img src={formData.images[index]} alt={`Aperçu ${index + 1}`} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-white font-bold text-sm bg-black/50 px-3 py-1.5 rounded-xl backdrop-blur-md">Changer</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-4 text-center">
+                          <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-3">
+                            <ImagePlus className="w-6 h-6 text-[#02603c]" />
+                          </div>
+                          <p className="text-xs text-slate-700 font-bold">{index === 0 ? 'Photo principale' : `Photo ${index + 1} (Optionnel)`}</p>
+                        </div>
+                      )}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        disabled={uploading}
+                        onChange={(e) => handleImageUpload(e, index)} 
+                      />
+                    </label>
+                    {formData.images[index] && (
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-xs hover:bg-rose-600 transition-colors"
+                      >
+                        <AlertTriangle className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
+              {uploadError && (
+                <p className="text-xs text-rose-600 mt-2 font-semibold w-full">{uploadError}</p>
+              )}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-bold text-slate-700 mb-1.5">Titre de l'article</label>
@@ -222,19 +272,60 @@ export default function PublishProduct() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Catégorie</label>
-              <select
-                name="categorie_id"
-                value={formData.categorie_id}
-                onChange={handleChange}
-                className="appearance-none block w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-900 bg-slate-50/50 focus:outline-hidden focus:ring-2 focus:ring-[#02603c]"
-              >
-                <option value="c1111111-1111-1111-1111-111111111111">Artisanat & Décoration</option>
-                <option value="c2222222-2222-2222-2222-222222222222">Mode & Textiles</option>
-                <option value="c3333333-3333-3333-3333-333333333333">Saveurs & Épicerie</option>
-                <option value="c4444444-4444-4444-4444-444444444444">Cosmétiques</option>
-              </select>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-slate-700 mb-3">Catégorie & Sous-catégorie</label>
+              
+              <div className="space-y-4">
+                {/* Catégorie Principale */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {dbCategories.map((cat) => (
+                    <button
+                      type="button"
+                      key={cat.id}
+                      onClick={() => setFormData(prev => ({ ...prev, categorie_id: cat.id, sous_categorie: '' }))}
+                      className={`flex flex-col items-center p-3 rounded-2xl border-2 transition-all ${
+                        formData.categorie_id === cat.id 
+                          ? 'border-[#02603c] bg-emerald-50 text-[#02603c]' 
+                          : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'
+                      }`}
+                    >
+                      <span className="text-2xl mb-1">{cat.icone_url || '📁'}</span>
+                      <span className="text-xs font-bold text-center leading-tight">{cat.nom}</span>
+                    </button>
+                  ))}
+                  {dbCategories.length === 0 && <span className="text-sm text-slate-500 italic col-span-4">Chargement des catégories...</span>}
+                </div>
+
+                {/* Sous-catégorie (conditionnelle) */}
+                <AnimatePresence mode="wait">
+                  {formData.categorie_id && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="p-4 bg-slate-50 rounded-2xl border border-slate-100"
+                    >
+                      <p className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Sélectionnez une sous-catégorie</p>
+                      <div className="flex flex-wrap gap-2">
+                        {dbCategories.find(c => c.id === formData.categorie_id)?.sous_categories?.map(sub => (
+                          <button
+                            type="button"
+                            key={sub}
+                            onClick={() => setFormData(prev => ({ ...prev, sous_categorie: sub }))}
+                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                              formData.sous_categorie === sub
+                                ? 'bg-[#02603c] text-white shadow-md'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             <div className="md:col-span-2">
@@ -251,15 +342,15 @@ export default function PublishProduct() {
             </div>
             
             <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Numéro de téléphone de contact</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Numéro de téléphone WhatsApp/Appel</label>
               <input
                 type="tel"
                 name="telephone_contact"
                 required
                 value={formData.telephone_contact}
-                onChange={handleChange}
-                className="appearance-none block w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#02603c] bg-slate-50/50"
-                placeholder="Ex: +237 6XX XX XX XX"
+                onChange={handlePhoneChange}
+                className="appearance-none block w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#02603c] bg-slate-50/50 font-bold"
+                placeholder="+237 6XX XX XX XX"
               />
             </div>
           </div>

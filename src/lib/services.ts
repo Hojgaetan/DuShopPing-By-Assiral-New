@@ -87,10 +87,11 @@ export async function createProduct(boutiqueId: string, productData: any) {
     .insert([{
       boutique_id: boutiqueId,
       categorie_id: productData.categorie_id || '11111111-1111-1111-1111-111111111111', // ID statique fallback
+      sous_categorie: productData.sous_categorie || null,
       titre: productData.titre,
       description: productData.description,
       prix: productData.prix,
-      images: productData.image_url ? [productData.image_url] : [],
+      images: productData.images && productData.images.length > 0 ? productData.images : (productData.image_url ? [productData.image_url] : []),
       statut: 'Actif'
     }])
     .select()
@@ -197,4 +198,78 @@ export async function incrementProductClics(productId: string) {
       type_action: 'ClicWhatsApp', // ou AppelDirect
       adresse_ip: 'CLIENT_IP'
     }]);
+}
+
+// ============================================================================
+// SERVICES CATEGORIES
+// ============================================================================
+
+export async function fetchCategories() {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('nom');
+  
+  if (error) {
+    console.error('Erreur lors de la récupération des catégories:', error);
+    return [];
+  }
+  return data;
+}
+
+export async function createCategory(catData: { nom: string; icone_url?: string; sous_categories?: string[] }) {
+  const { data, error } = await supabase
+    .from('categories')
+    .insert([catData])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Erreur création catégorie:', error);
+    throw error;
+  }
+  return data;
+}
+
+export async function updateCategory(id: string, catData: { nom: string; icone_url?: string; sous_categories?: string[] }) {
+  const { data, error } = await supabase
+    .from('categories')
+    .update(catData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Erreur maj catégorie:', error);
+    throw error;
+  }
+  return data;
+}
+
+export async function deleteCategory(id: string) {
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Erreur suppression catégorie:', error);
+    throw error;
+  }
+  return true;
+}
+
+export async function fetchMegaMenuData() {
+  // Récupère les catégories et pour chaque sous-catégorie, essaie de trouver jusqu'à 2 produits populaires
+  // Pour l'instant, faisons 2 requêtes : une pour les catégories, une pour les produits (limités)
+  const categories = await fetchCategories();
+  
+  // Dans un MVP, on va faire simple : récupérer les X derniers produits et les associer en frontend
+  const { data: produits } = await supabase
+    .from('produits')
+    .select('*, boutiques(nom)')
+    .order('date_publication', { ascending: false })
+    .limit(50);
+    
+  return { categories, produits: produits || [] };
 }

@@ -8,7 +8,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Search, Bell, Heart, ChevronDown, Sparkles, ShoppingBag, ArrowRight, Store, ShieldCheck, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
-import { fetchUserBoutique } from '../lib/services';
+import { fetchUserBoutique, fetchMegaMenuData } from '../lib/services';
 
 interface HeaderProps {
   searchQuery: string;
@@ -55,17 +55,24 @@ export default function Header({
   const [boutiqueLogo, setBoutiqueLogo] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && user.role === 'Vendeur') {
-      fetchUserBoutique(user.id).then(b => {
-        if (b && b.logo_url) {
-          setBoutiqueLogo(b.logo_url);
-        } else {
-          setBoutiqueLogo(null);
-        }
-      });
-    } else {
-      setBoutiqueLogo(null);
-    }
+    const loadBoutique = () => {
+      if (user && user.role === 'Vendeur') {
+        fetchUserBoutique(user.id).then(b => {
+          if (b && b.logo_url) {
+            setBoutiqueLogo(b.logo_url);
+          } else {
+            setBoutiqueLogo(null);
+          }
+        });
+      } else {
+        setBoutiqueLogo(null);
+      }
+    };
+
+    loadBoutique();
+
+    window.addEventListener('boutique-updated', loadBoutique);
+    return () => window.removeEventListener('boutique-updated', loadBoutique);
   }, [user]);
   
   // Mega menu states
@@ -86,98 +93,31 @@ export default function Header({
     silk: '/src/assets/images/echarpe_soie_1781282435673.jpg',
   };
 
-  const megaCategories: MegaCategory[] = [
-    {
-      label: 'Artisanat & Décoration',
-      value: 'Artisanat',
-      subcategories: [
-        {
-          name: 'Paniers & Vanneries',
-          products: [
-            { id: 'une-1', titre: 'Panier Tiss Premium', prix: 29500, images: [IMAGES.basket], nom_boutique: 'Amara Studio' },
-            { id: 'spon1-1', titre: 'Vase Traditionnel', prix: 27500, images: [IMAGES.basket], nom_boutique: 'Savana Decor' }
-          ]
-        },
-        {
-          name: 'Poteries & Céramiques',
-          products: [
-            { id: 'pop-1', titre: 'Vase en Terre Cuite', prix: 23000, images: [IMAGES.basket], nom_boutique: 'Amara Studio' },
-            { id: 'une-3', titre: 'Statuette Bronze Royale', prix: 98400, images: [IMAGES.vases], nom_boutique: 'Mama Africa' }
-          ]
-        },
-        {
-          name: 'Sculptures d\'Afrique',
-          products: [
-            { id: 'notes-1', titre: 'Statuette Bronze', prix: 78700, images: [IMAGES.vases], nom_boutique: 'Mama Africa' },
-            { id: 'spon2-1', titre: 'Masque Tribal', prix: 55800, images: [IMAGES.vases], nom_boutique: 'Benin Arts' }
-          ]
-        }
-      ]
-    },
-    {
-      label: 'Mode & Textiles',
-      value: 'Mode',
-      subcategories: [
-        {
-          name: 'Tuniques & Vestes',
-          products: [
-            { id: 'une-2', titre: 'Tunique Indigo Artisanale', prix: 42600, images: [IMAGES.hoodie], nom_boutique: 'Kente Masters' },
-            { id: 'pop-2', titre: 'Tunique Brodée', prix: 36000, images: [IMAGES.hoodie], nom_boutique: 'Kente Masters' }
-          ]
-        },
-        {
-          name: 'Boubous & Caftans',
-          products: [
-            { id: 'spon1-2', titre: 'Boubou Indigo', prix: 51200, images: [IMAGES.hoodie], nom_boutique: 'Loom Heritage' }
-          ]
-        },
-        {
-          name: 'Écharpes & Étoffes',
-          products: [
-            { id: 'notes-3', titre: 'Écharpe en Soie', prix: 26200, images: [IMAGES.silk], nom_boutique: 'Dushop General Seller' },
-            { id: 'spon2-3', titre: 'Soie de Tana', prix: 32000, images: [IMAGES.silk], nom_boutique: 'Dushop General Seller' }
-          ]
-        }
-      ]
-    },
-    {
-      label: 'Épicerie & Épices',
-      value: 'Épicerie',
-      subcategories: [
-        {
-          name: 'Épices Rares',
-          products: [
-            { id: 'notes-2', titre: 'Épices Berbère', prix: 5600, images: [IMAGES.spices], nom_boutique: 'Épices du Sahel' }
-          ]
-        },
-        {
-          name: 'Assortiments & Coffrets',
-          products: [
-            { id: 'spon2-2', titre: 'Coffret Épices', prix: 16400, images: [IMAGES.spices], nom_boutique: 'Épices du Sahel' }
-          ]
-        }
-      ]
-    },
-    {
-      label: 'Soins & Saveurs',
-      value: 'Saveurs',
-      subcategories: [
-        {
-          name: 'Miels Purs d\'Altitude',
-          products: [
-            { id: 'pop-3-variant', titre: 'Miel Pur 1kg', prix: 12100, images: [IMAGES.cosmetics], nom_boutique: 'Miel d\'Or' },
-            { id: 'pop-3', titre: 'Miel de Forêt', prix: 7900, images: [IMAGES.cosmetics], nom_boutique: 'Miel d\'Or' }
-          ]
-        },
-        {
-          name: 'Cosmétiques de la Ruche',
-          products: [
-            { id: 'pop-3', titre: 'Miel de Forêt Cosme', prix: 7900, images: [IMAGES.cosmetics], nom_boutique: 'Miel d\'Or' }
-          ]
-        }
-      ]
-    }
-  ];
+  const [megaCategories, setMegaCategories] = useState<MegaCategory[]>([]);
+
+  useEffect(() => {
+    fetchMegaMenuData().then(({ categories, produits }) => {
+      const formatted: MegaCategory[] = categories.map((cat: any) => ({
+        label: cat.nom,
+        value: cat.nom,
+        subcategories: (cat.sous_categories || []).map((subName: string) => {
+          // Find up to 2 products matching this subcategory
+          const matchingProds = produits.filter((p: any) => p.sous_categorie === subName).slice(0, 2);
+          return {
+            name: subName,
+            products: matchingProds.map((p: any) => ({
+              id: p.id,
+              titre: p.titre,
+              prix: p.prix,
+              images: p.images || [],
+              nom_boutique: p.boutiques?.nom || 'Vendeur inconnu'
+            }))
+          };
+        })
+      }));
+      setMegaCategories(formatted);
+    });
+  }, []);
 
   // Automatically reset hovered subcategory to the first option when category hover shifts
   useEffect(() => {

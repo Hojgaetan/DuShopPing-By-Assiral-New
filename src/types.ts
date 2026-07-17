@@ -54,7 +54,8 @@ export interface Boutique {
 export interface Categorie {
   id: string; // UUID
   nom: string;
-  iconeUrl?: string;
+  icone_url?: string;
+  sous_categories?: string[];
 }
 
 export type StatutProduit = 'Actif' | 'Vendu' | 'Bloque' | 'Brouillon';
@@ -63,6 +64,7 @@ export interface Produit {
   id: string; // UUID
   boutique_id: string; // ForeignKey
   categorie_id: string; // ForeignKey
+  sous_categorie?: string;
   titre: string;
   description: string;
   prix: number;

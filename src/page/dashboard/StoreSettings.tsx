@@ -67,6 +67,7 @@ export default function StoreSettings() {
     try {
       await createOrUpdateBoutique(user.id, formData);
       setSuccess(true);
+      window.dispatchEvent(new Event('boutique-updated'));
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error(err);

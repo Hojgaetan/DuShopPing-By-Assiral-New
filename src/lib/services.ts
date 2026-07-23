@@ -273,3 +273,70 @@ export async function fetchMegaMenuData() {
     
   return { categories, produits: produits || [] };
 }
+
+// ============================================================================
+// SERVICES ADMIN (Vendeurs & Annonces)
+// ============================================================================
+
+export async function fetchAdminBoutiques() {
+  const { data, error } = await supabase
+    .from('boutiques')
+    .select(`
+      *,
+      vendeurs (
+        statut_verification,
+        utilisateurs (
+          nom,
+          email
+        )
+      ),
+      produits (count)
+    `);
+
+  if (error) {
+    console.error('Erreur fetchAdminBoutiques:', error);
+    return [];
+  }
+
+  return data.map(b => ({
+    id: b.id,
+    vendeur_id: b.vendeur_id,
+    nom: b.nom,
+    statut_moderation: b.statut_moderation,
+    nom_vendeur: b.vendeurs?.utilisateurs?.nom || 'Inconnu',
+    email: b.vendeurs?.utilisateurs?.email || 'Inconnu',
+    statut_verification: b.vendeurs?.statut_verification,
+    nb_produits: b.produits?.[0]?.count || 0
+  }));
+}
+
+export async function updateBoutiqueStatus(boutiqueId: string, statut: string) {
+  const { error } = await supabase
+    .from('boutiques')
+    .update({ statut_moderation: statut })
+    .eq('id', boutiqueId);
+
+  if (error) throw error;
+  return true;
+}
+
+export async function fetchAdminBoutiqueProducts(boutiqueId: string) {
+  const { data, error } = await supabase
+    .from('produits')
+    .select('*')
+    .eq('boutique_id', boutiqueId)
+    .order('date_publication', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateProductStatus(productId: string, statut: string) {
+  const { error } = await supabase
+    .from('produits')
+    .update({ statut: statut })
+    .eq('id', productId);
+
+  if (error) throw error;
+  return true;
+}

@@ -52,7 +52,11 @@ export default function Register() {
       });
 
       if (result.success) {
-        navigate(activeTab === 'vendeur' ? '/dashboard' : '/');
+        if (result.requiresEmailConfirmation) {
+          navigate('/login', { state: { message: 'Compte créé. Consultez votre e-mail pour confirmer votre inscription avant de vous connecter.' } });
+        } else {
+          navigate(activeTab === 'vendeur' ? '/dashboard' : '/');
+        }
       } else {
         setError(result.error || "Erreur lors de l'inscription");
         setIsLoading(false);

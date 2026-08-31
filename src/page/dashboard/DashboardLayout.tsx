@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Store, PackagePlus, BarChart3, Zap, Settings, ArrowLeft } from 'lucide-react';
+import { Store, PackagePlus, PackageSearch, BarChart3, Zap, Settings, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function DashboardLayout() {
@@ -15,7 +15,6 @@ export default function DashboardLayout() {
     );
   }
 
-  // Redirection de sécurité (simplifiée pour démo)
   if (!user || user.role !== 'Vendeur') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -32,9 +31,11 @@ export default function DashboardLayout() {
 
   const navItems = [
     { name: 'Ma Boutique', icon: Store, path: '/dashboard/store' },
+    { name: 'Mes Articles', icon: PackageSearch, path: '/dashboard/products' },
     { name: 'Publier un article', icon: PackagePlus, path: '/dashboard/publish' },
     { name: 'Formules Boost', icon: Zap, path: '/dashboard/boost' },
     { name: 'Statistiques', icon: BarChart3, path: '/dashboard/stats' },
+    { name: 'Mon profil', icon: Settings, path: '/dashboard/profile' },
   ];
 
   return (

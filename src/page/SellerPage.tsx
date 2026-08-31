@@ -6,61 +6,52 @@
 import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Star, MapPin, BadgeCheck, Phone, Mail, Globe, ArrowRight, HelpCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft, MapPin, BadgeCheck, HelpCircle, Loader2, Store } from 'lucide-react';
 import { ProduitUI } from '../types';
-import { ALL_PRODUCTS, SELLERS } from '../data';
 import ProductCard from '../components/ProductCard';
-import { incrementBoutiqueVues } from '../lib/services';
+import { fetchPublicStorefront, incrementBoutiqueVues, PublicStorefront } from '../lib/services';
 
 interface SellerPageProps {
   customProducts: ProduitUI[];
   favorites: ProduitUI[];
   handleToggleFavorite: (id: string) => void;
-  triggerCallSimulation: (product: ProduitUI) => void;
-  triggerChatSimulation: (product: ProduitUI) => void;
+  onCallSeller: (product: ProduitUI) => void;
+  onChatSeller: (product: ProduitUI) => void;
 }
 
 export default function SellerPage({
   customProducts,
   favorites,
   handleToggleFavorite,
-  triggerCallSimulation,
-  triggerChatSimulation
+  onCallSeller,
+  onChatSeller
 }: SellerPageProps) {
   const { sellerName } = useParams<{ sellerName: string }>();
   const navigate = useNavigate();
 
-  const decodedName = sellerName ? decodeURIComponent(sellerName) : 'Artisan Inconnu';
-  
-  const [realBoutique, setRealBoutique] = React.useState<any>(null);
+  const storeReference = sellerName ? decodeURIComponent(sellerName) : '';
+  const [boutique, setBoutique] = React.useState<PublicStorefront | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState('');
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as any });
     
-    // Find real boutique by name
-    const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
-    const found = boutiques.find((b: any) => b.nom.toLowerCase() === decodedName.toLowerCase());
-    if (found) {
-      setRealBoutique(found);
-      incrementBoutiqueVues(found.id);
-    }
-  }, [decodedName]);
+    setLoading(true);
+    setLoadError('');
+    fetchPublicStorefront(storeReference).then(found => {
+      setBoutique(found);
+      if (found) void incrementBoutiqueVues(found.id);
+    }).catch(() => setLoadError('Impossible de charger cette boutique.'))
+      .finally(() => setLoading(false));
+  }, [storeReference]);
 
-  // Get matching seller details or fallback
-  const sellerInfo = SELLERS[decodedName] || {
-    nom: decodedName,
-    rating: 4.8,
-    hasBadge: true,
-    avatar: realBoutique?.logo_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&fit=crop&q=80',
-    telephone: '+237 600 00 00 00',
-    whatsapp: '237600000000',
-    localisation: 'Douala, Cameroun',
-    description: realBoutique?.description || 'Artisan et créateur de la vitrine locale, engagé dans la promotion équitable des talents du continent camerounais.'
-  };
+  const sellerProducts = boutique
+    ? customProducts.filter(product => product.boutique_id === boutique.id)
+    : [];
 
-  // Find all products by seller
-  const combined = [...customProducts, ...ALL_PRODUCTS];
-  const sellerProducts = combined.filter(p => p.nom_boutique.toLowerCase() === decodedName.toLowerCase());
+  if (loading) return <div className="py-20 text-center text-slate-500"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-emerald-600" />Chargement de la boutique...</div>;
+  if (loadError || !boutique) return <div className="max-w-xl mx-auto py-16 text-center"><AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" /><h2 className="text-2xl font-extrabold text-slate-900">Boutique introuvable</h2><p className="text-slate-500 mt-2">{loadError || "Cette boutique n’existe pas ou n’est pas encore approuvée."}</p><Link to="/" className="inline-block mt-6 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold">Retour à l’accueil</Link></div>;
 
   return (
     <div className="space-y-8" id="seller-profile-view">
@@ -71,7 +62,7 @@ export default function SellerPage({
           <span>/</span>
           <span className="text-slate-850 font-semibold">Artisans</span>
           <span>/</span>
-          <span className="text-slate-850 font-semibold">{decodedName}</span>
+          <span className="text-slate-850 font-semibold">{boutique.nom}</span>
         </div>
         <button
           onClick={() => navigate(-1)}
@@ -90,16 +81,11 @@ export default function SellerPage({
 
         <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
-            <img
-              src={sellerInfo.avatar}
-              alt={decodedName}
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-4 border-white/10 shadow-lg shrink-0"
-              referrerPolicy="no-referrer"
-            />
+            {boutique.logo_url ? <img src={boutique.logo_url} alt={boutique.nom} className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-4 border-white/10 shadow-lg shrink-0" /> : <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/10 border-4 border-white/10 flex items-center justify-center"><Store className="w-10 h-10 text-white/70" /></div>}
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black font-display tracking-tight text-white">{decodedName}</h1>
-                {sellerInfo.hasBadge && (
+                <h1 className="text-2xl sm:text-3xl font-black font-display tracking-tight text-white">{boutique.nom}</h1>
+                {boutique.verified && (
                   <span className="bg-emerald-450/20 text-emerald-300 border border-emerald-450/40 text-[10px] font-black px-2 py-0.5 rounded-md uppercase flex items-center gap-1 tracking-wider">
                     <BadgeCheck className="w-3.5 h-3.5 fill-current text-emerald-450" />
                     <span>CERTIFIÉ</span>
@@ -108,19 +94,14 @@ export default function SellerPage({
               </div>
 
               <p className="text-slate-300 text-xs sm:text-sm max-w-xl leading-relaxed">
-                {sellerInfo.description}
+                {boutique.description || 'Cette boutique n’a pas encore ajouté de description.'}
               </p>
 
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-slate-400">
-                <span className="flex items-center gap-1 text-amber-400 font-bold">
-                  <Star className="w-4 h-4 fill-current shrink-0" />
-                  <span>{sellerInfo.rating} d'évaluation</span>
-                </span>
-                <span className="hidden sm:inline">•</span>
-                <span className="flex items-center gap-1">
+                {boutique.localisation && <span className="flex items-center gap-1">
                   <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span>{sellerInfo.localisation}</span>
-                </span>
+                  <span>{boutique.localisation}</span>
+                </span>}
               </div>
             </div>
           </div>
@@ -131,7 +112,6 @@ export default function SellerPage({
               <span className="text-3xl font-black font-display text-white">{sellerProducts.length}</span>
               <span className="text-xs text-slate-400">articles actifs</span>
             </div>
-            <div className="text-[10px] text-slate-400 mt-1">Évaluation supérieure à 98%</div>
           </div>
         </div>
       </div>
@@ -140,7 +120,7 @@ export default function SellerPage({
       <div className="space-y-6">
         <div className="border-b border-slate-100 pb-3">
           <h3 className="text-xl font-bold text-slate-900 font-display">
-            Vitrines d'articles de {decodedName}
+            Vitrine de {boutique.nom}
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
             Découvrez toutes les créations artisanales de ce vendeur.
@@ -174,8 +154,8 @@ export default function SellerPage({
                 variant={product.isSponsorised ? 'detailed' : 'minimal'}
                 isFavorite={favorites.some(f => f.id === product.id)}
                 onToggleFavorite={handleToggleFavorite}
-                onCallSeller={triggerCallSimulation}
-                onChatSeller={triggerChatSimulation}
+                onCallSeller={onCallSeller}
+                onChatSeller={onChatSeller}
               />
             ))}
           </div>

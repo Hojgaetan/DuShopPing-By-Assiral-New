@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Zap, Crown, Gem, Check, Phone, ArrowRight, CheckCircle2, X, Sparkles } from 'lucide-react';
+import { Zap, Crown, Gem, Check, Phone, ArrowRight, CheckCircle2, X, Sparkles, Loader2, AlertCircle, Clock3, History } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { subscribeToBoost } from '../../lib/services';
+import { fetchBoutiqueProducts, fetchMyBoostRequests, fetchSponsoringPlans, SellerBoostRequest, SellerProductSummary, subscribeToBoost } from '../../lib/services';
 
-const PLANS = [
-  { id: 'p1111111-1111-1111-1111-111111111111', nom: 'PLAN DE BASE', jours: 7, prix: 5000, multi: 1.2, icon: Zap, color: 'emerald' },
-  { id: 'p2222222-2222-2222-2222-222222222222', nom: 'PLAN BOOST ÉLITE', jours: 14, prix: 15000, multi: 1.8, icon: Crown, color: 'amber', isPopular: true },
-  { id: 'p3333333-3333-3333-3333-333333333333', nom: 'PLAN IMPÉRIAL', jours: 30, prix: 35000, multi: 2.5, icon: Gem, color: 'purple' },
-];
+interface BoostPlan {
+  id: string;
+  nom: string;
+  jours: number;
+  prix: number;
+  multi: number;
+  icon: React.ComponentType<{ className?: string }>;
+  color: 'emerald' | 'amber' | 'purple';
+  isPopular?: boolean;
+}
 
 // ======================== CONFETTI ENGINE ========================
 interface Particle {
@@ -161,22 +166,104 @@ function ConfettiCanvas({ active, onComplete }: { active: boolean; onComplete: (
 // ======================== MAIN COMPONENT ========================
 export default function BoostPlans() {
   const { user } = useAuth();
-  const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[0] | null>(null);
+  const [plans, setPlans] = useState<BoostPlan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [plansError, setPlansError] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState<BoostPlan | null>(null);
+  const [products, setProducts] = useState<SellerProductSummary[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectionError, setSelectionError] = useState('');
 
   // Confirmation popup state
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
-  const [pendingPlan, setPendingPlan] = useState<typeof PLANS[0] | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<BoostPlan | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   
   // Payment states
-  const [operateur, setOperateur] = useState<'MoMo' | 'OM'>('MoMo');
+  const [operateur, setOperateur] = useState<'MoMo' | 'OM'>('OM');
   const [numero, setNumero] = useState('');
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  const [boostRequests, setBoostRequests] = useState<SellerBoostRequest[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const icons = [Zap, Crown, Gem];
+    const colors: BoostPlan['color'][] = ['emerald', 'amber', 'purple'];
+
+    fetchSponsoringPlans()
+      .then(records => {
+        if (!mounted) return;
+        const middleIndex = records.length > 1 ? 1 : -1;
+        setPlans(records.map((record, index) => ({
+          id: record.id,
+          nom: record.nom_plan,
+          jours: record.duree_en_jours,
+          prix: record.prix_unitaire,
+          multi: record.multiplicateur_visibilite,
+          icon: icons[index % icons.length],
+          color: colors[index % colors.length],
+          isPopular: index === middleIndex,
+        })));
+      })
+      .catch(() => {
+        if (mounted) setPlansError('Impossible de charger les formules de sponsoring.');
+      })
+      .finally(() => {
+        if (mounted) setLoadingPlans(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!user?.boutiqueId) {
+      setLoadingProducts(false);
+      return;
+    }
+
+    fetchBoutiqueProducts(user.boutiqueId)
+      .then(data => {
+        if (!mounted) return;
+        const activeProducts = data.filter(product => product.statut === 'Actif');
+        setProducts(activeProducts);
+        if (activeProducts.length === 1) setSelectedProductId(activeProducts[0].id);
+      })
+      .catch(() => {
+        if (mounted) setSelectionError('Impossible de charger vos produits actifs.');
+      })
+      .finally(() => {
+        if (mounted) setLoadingProducts(false);
+      });
+
+    return () => { mounted = false; };
+  }, [user?.boutiqueId]);
+
+  useEffect(() => {
+    if (!user) {
+      setLoadingRequests(false);
+      return;
+    }
+    fetchMyBoostRequests()
+      .then(setBoostRequests)
+      .catch(() => setPaymentError("Impossible de charger l'historique des demandes Boost."))
+      .finally(() => setLoadingRequests(false));
+  }, [user]);
 
   // Handle clicking on a plan - show confirmation popup
-  const handlePlanClick = (plan: typeof PLANS[0]) => {
+  const handlePlanClick = (plan: BoostPlan) => {
+    if (!selectedProductId) {
+      setSelectionError('Sélectionnez d’abord le produit à sponsoriser.');
+      return;
+    }
+    setSelectionError('');
     setPendingPlan(plan);
     setShowConfirmPopup(true);
   };
@@ -202,19 +289,38 @@ export default function BoostPlans() {
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.boutiqueId || !selectedPlan || !numero) return;
+    if (!user?.boutiqueId || !selectedProductId || !selectedPlan) return;
+
+    const adminWhatsApp = (import.meta.env.VITE_ADMIN_WHATSAPP_NUMBER || '').replace(/\D/g, '');
+    if (!adminWhatsApp) {
+      setPaymentError("Le numéro WhatsApp de l'administrateur n'est pas encore configuré.");
+      return;
+    }
     
     setProcessing(true);
+    setPaymentError('');
     try {
-      await subscribeToBoost(user.boutiqueId, selectedPlan.id, operateur, numero, selectedPlan.prix);
+      const result = await subscribeToBoost(selectedProductId, selectedPlan.id, numero);
+      if (!result.success) {
+        setPaymentError(result.error || "La demande de paiement n'a pas pu être enregistrée.");
+        return;
+      }
       setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        setSelectedPlan(null);
-        setNumero('');
-      }, 5000);
+      const product = products.find(item => item.id === selectedProductId);
+      const proofMessage = [
+        'Bonjour, je souhaite transmettre la preuve de paiement de mon Boost DuShopPing.',
+        `Référence : ${result.transactionId}`,
+        `Plan : ${selectedPlan.nom}`,
+        `Produit : ${product?.titre || selectedProductId}`,
+        `Montant : ${selectedPlan.prix.toLocaleString('fr-FR')} FCFA`,
+        `Numéro payeur : ${numero.trim() || 'Non renseigné'}`,
+        '',
+        'Je joins la capture ou le reçu de paiement à ce message.',
+      ].join('\n');
+      window.location.assign(`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(proofMessage)}`);
     } catch (error) {
       console.error(error);
+      setPaymentError("La demande de paiement n'a pas pu être enregistrée.");
     } finally {
       setProcessing(false);
     }
@@ -241,6 +347,78 @@ export default function BoostPlans() {
           Augmentez votre visibilité, débloquez les quotas et multipliez vos ventes en mettant vos créations en avant.
         </p>
       </div>
+
+      <section className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <History className="w-5 h-5 text-slate-600" />
+          <div>
+            <h3 className="font-extrabold text-slate-900">Mes demandes Boost</h3>
+            <p className="text-sm text-slate-500">Suivez la vérification de vos paiements et la durée de vos campagnes.</p>
+          </div>
+        </div>
+        {loadingRequests ? (
+          <div className="py-5 text-center text-slate-500"><Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />Chargement...</div>
+        ) : boostRequests.length === 0 ? (
+          <p className="py-5 text-center text-sm text-slate-500 bg-slate-50 rounded-2xl">Aucune demande Boost pour le moment.</p>
+        ) : (
+          <div className="space-y-3">
+            {boostRequests.map(request => {
+              const statusLabel = request.status === 'Reussi' ? 'Validée' : request.status === 'Echoue' ? 'Refusée' : 'En attente';
+              const statusClass = request.status === 'Reussi' ? 'bg-emerald-100 text-emerald-700' : request.status === 'Echoue' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700';
+              return (
+                <div key={request.id} className="border border-slate-100 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap"><p className="font-extrabold text-slate-900">{request.productTitle}</p><span className={`${statusClass} px-2.5 py-1 rounded-full text-[11px] font-bold`}>{statusLabel}</span></div>
+                    <p className="text-sm text-slate-500 mt-1">{request.planName} · {request.amount.toLocaleString('fr-FR')} FCFA</p>
+                    <p className="text-xs text-slate-400 mt-1">Réf. {request.reference} · {new Date(request.requestedAt).toLocaleString('fr-FR')}</p>
+                  </div>
+                  <div className="md:text-right text-sm">
+                    {request.startsAt && request.endsAt ? (
+                      <><p className="font-bold text-emerald-700 inline-flex items-center gap-1"><Clock3 className="w-4 h-4" />Campagne active</p><p className="text-xs text-slate-500 mt-1">Du {new Date(request.startsAt).toLocaleDateString('fr-FR')} au {new Date(request.endsAt).toLocaleDateString('fr-FR')}</p></>
+                    ) : request.status === 'EnAttente' ? (
+                      <p className="text-xs text-amber-700 font-bold">Preuve en cours de vérification</p>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 className="font-extrabold text-slate-900">1. Choisissez le produit à booster</h3>
+            <p className="text-sm text-slate-500 mt-1">Seuls vos produits actifs peuvent être sponsorisés.</p>
+          </div>
+        </div>
+
+        {loadingProducts ? (
+          <div className="py-6 text-center text-slate-500"><Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-amber-500" />Chargement des produits...</div>
+        ) : products.length === 0 ? (
+          <div className="bg-amber-50 text-amber-800 border border-amber-100 rounded-xl p-4 text-sm font-bold">
+            Publiez et activez au moins un produit avant de choisir une formule Boost.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {products.map(product => (
+              <button
+                type="button"
+                key={product.id}
+                onClick={() => { setSelectedProductId(product.id); setSelectionError(''); setSelectedPlan(null); }}
+                className={`flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all ${selectedProductId === product.id ? 'border-amber-500 bg-amber-50' : 'border-slate-100 hover:border-slate-200'}`}
+              >
+                <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden shrink-0">
+                  {product.images[0] && <img src={product.images[0]} alt="" className="w-full h-full object-cover" />}
+                </div>
+                <div className="min-w-0"><p className="font-bold text-sm text-slate-900 truncate">{product.titre}</p><p className="text-xs text-emerald-700 font-bold mt-1">{product.prix.toLocaleString('fr-FR')} FCFA</p></div>
+              </button>
+            ))}
+          </div>
+        )}
+        {selectionError && <p className="mt-3 text-sm font-bold text-rose-600 flex items-center gap-2"><AlertCircle className="w-4 h-4" />{selectionError}</p>}
+      </section>
 
       {/* Confetti Canvas */}
       <ConfettiCanvas active={showConfetti} onComplete={handleConfettiComplete} />
@@ -401,9 +579,9 @@ export default function BoostPlans() {
             <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h3 className="text-2xl font-extrabold text-emerald-900 mb-2">Paiement Réussi !</h3>
+            <h3 className="text-2xl font-extrabold text-emerald-900 mb-2">Demande enregistrée</h3>
             <p className="text-emerald-700 max-w-md mx-auto">
-              Votre formule a été activée. Vos articles seront maintenant mis en avant sur la page d'accueil et votre quota de publication est débloqué.
+              Votre demande de paiement est en attente de confirmation. La formule sera activée uniquement après validation par l'opérateur.
             </p>
             <button
               onClick={() => { setSuccess(false); setSelectedPlan(null); }}
@@ -414,9 +592,23 @@ export default function BoostPlans() {
           </motion.div>
         ) : (
           <motion.div key="plans" className="space-y-8" exit={{ opacity: 0 }}>
+            <h3 className="font-extrabold text-slate-900">2. Choisissez votre formule</h3>
             {/* Grille des Plans */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {PLANS.map((plan) => {
+              {loadingPlans ? (
+                <div className="md:col-span-3 py-12 text-center text-slate-500">
+                  <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-amber-500" />
+                  Chargement des formules...
+                </div>
+              ) : plansError ? (
+                <div className="md:col-span-3 bg-rose-50 text-rose-700 border border-rose-100 rounded-2xl p-6 flex items-center justify-center gap-2 font-bold">
+                  <AlertCircle className="w-5 h-5" /> {plansError}
+                </div>
+              ) : plans.length === 0 ? (
+                <div className="md:col-span-3 bg-white border border-slate-100 rounded-2xl p-10 text-center text-slate-500">
+                  Aucune formule n'est disponible pour le moment.
+                </div>
+              ) : plans.map((plan) => {
                 const colors = getColorClasses(plan.color);
                 return (
                   <motion.div
@@ -485,6 +677,11 @@ export default function BoostPlans() {
                 >
                   <div className="p-8">
                     <h3 className="text-xl font-extrabold text-slate-900 mb-6">Procéder au paiement</h3>
+                    {paymentError && (
+                      <div className="mb-6 bg-rose-50 text-rose-700 border border-rose-100 rounded-xl p-4 flex items-center gap-2 text-sm font-bold">
+                        <AlertCircle className="w-5 h-5" /> {paymentError}
+                      </div>
+                    )}
                     
                     <form onSubmit={handlePayment} className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Choix de l'opérateur */}
@@ -492,8 +689,8 @@ export default function BoostPlans() {
                         <label className="block text-sm font-bold text-slate-700">Moyen de paiement</label>
                         <div className="grid grid-cols-2 gap-4">
                           <div
-                            onClick={() => setOperateur('MoMo')}
-                            className={`p-4 rounded-2xl border-2 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all ${
+                            title="Paiement MTN bientôt disponible"
+                            className={`p-4 rounded-2xl border-2 cursor-not-allowed opacity-50 flex flex-col items-center justify-center gap-2 transition-all ${
                               operateur === 'MoMo' ? 'border-[#ffcc00] bg-[#ffcc00]/10' : 'border-slate-100 hover:border-slate-200'
                             }`}
                           >
@@ -511,19 +708,30 @@ export default function BoostPlans() {
                             <span className="text-xs font-bold text-slate-700">Orange Money</span>
                           </div>
                         </div>
+                        <p className="text-xs text-slate-500">Le paiement Boost est actuellement disponible via Orange Money.</p>
                       </div>
 
                       {/* Saisie Numéro et Validation */}
                       <div className="space-y-4 flex flex-col justify-between">
                         <div>
-                          <label className="block text-sm font-bold text-slate-700 mb-1.5">Numéro de téléphone</label>
+                          {operateur === 'OM' && (
+                            <div className="mb-5 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-slate-700">
+                              <p className="font-extrabold text-orange-700 mb-2">Paiement Orange Money</p>
+                              <ol className="list-decimal pl-5 space-y-1.5">
+                                <li>Composez <strong>#150*47#</strong> sur votre téléphone.</li>
+                                <li>Saisissez le code marchand <strong className="text-base">1044288</strong>.</li>
+                                <li>Payez exactement <strong>{selectedPlan.prix.toLocaleString('fr-FR')} FCFA</strong>.</li>
+                                <li>Conservez le reçu ou faites une capture d’écran.</li>
+                              </ol>
+                            </div>
+                          )}
+                          <label className="block text-sm font-bold text-slate-700 mb-1.5">Numéro Orange Money <span className="font-medium text-slate-400">(facultatif)</span></label>
                           <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                               <Phone className="h-5 w-5 text-slate-400" />
                             </div>
                             <input
                               type="tel"
-                              required
                               value={numero}
                               onChange={(e) => setNumero(e.target.value)}
                               className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-slate-800 transition-all bg-slate-50/50"
@@ -531,20 +739,21 @@ export default function BoostPlans() {
                             />
                           </div>
                           <p className="text-xs text-slate-500 mt-2">
-                            Vous recevrez une notification sur votre téléphone pour valider le retrait de <strong>{selectedPlan.prix.toLocaleString()} FCFA</strong>.
+                            Si vous renseignez ce champ, indiquez le numéro avec lequel vous effectuerez la transaction Orange Money. Cela aidera l’administrateur à vérifier votre preuve de paiement.
+                          </p>
+                          <p className="text-xs text-slate-500 mt-2">
+                            Une demande de <strong>{selectedPlan.prix.toLocaleString()} FCFA</strong> sera enregistrée. Aucun boost ne sera activé avant vérification de la preuve.
                           </p>
                         </div>
 
                         <button
                           type="submit"
-                          disabled={processing || !numero}
+                          disabled={processing}
                           className={`w-full py-3.5 rounded-xl text-white font-extrabold flex items-center justify-center gap-2 transition-all shadow-md ${
-                            operateur === 'MoMo' 
-                              ? 'bg-[#004f71] hover:bg-[#003852] shadow-[#004f71]/20' 
-                              : 'bg-[#ff6600] hover:bg-[#cc5200] shadow-[#ff6600]/20'
+                            'bg-[#ff6600] hover:bg-[#cc5200] shadow-[#ff6600]/20'
                           } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                          {processing ? 'Attente de validation...' : `Payer ${selectedPlan.prix.toLocaleString()} FCFA`}
+                          {processing ? 'Enregistrement...' : 'J’ai payé — envoyer la preuve'}
                           {!processing && <ArrowRight className="w-5 h-5" />}
                         </button>
                       </div>

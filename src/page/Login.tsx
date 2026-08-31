@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ShoppingBag, Mail, Lock, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +23,9 @@ export default function Login() {
       
       if (result.success) {
         // Redirection selon le rôle récupéré depuis Supabase Auth
-        if (result.role === 'Vendeur') {
+        if (result.role === 'Admin') {
+          navigate('/admin');
+        } else if (result.role === 'Vendeur') {
           navigate('/dashboard');
         } else {
           navigate('/');
@@ -73,6 +76,11 @@ export default function Login() {
             {error}
           </div>
         )}
+        {location.state?.message && (
+          <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl text-sm font-bold border border-emerald-100">
+            {location.state.message}
+          </div>
+        )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -104,9 +112,9 @@ export default function Login() {
                 <label htmlFor="password" className="block text-sm font-bold text-slate-700">
                   Mot de passe
                 </label>
-                <a href="#" className="text-xs font-bold text-brand hover:text-emerald-700 transition-colors">
+                <Link to="/forgot-password" className="text-xs font-bold text-brand hover:text-emerald-700 transition-colors">
                   Mot de passe oublié ?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

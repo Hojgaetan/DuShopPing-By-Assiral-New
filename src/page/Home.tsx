@@ -8,15 +8,7 @@ import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import SidebarAd from '../components/SidebarAd';
-import SupabaseMigrationConsole from '../components/SupabaseMigrationConsole';
 import { ProduitUI } from '../types';
-import {
-  PRODUCTS_A_LA_UNE as initialFeatured,
-  SELECTIONS_POPULAIRES as initialPopular,
-  PRODUITS_SPONSORISES_1 as initialSponsorised1,
-  LES_MIEUX_NOTES as initialHighlyRated,
-  PRODUITS_SPONSORISES_2 as initialSponsorised2
-} from '../data';
 
 interface HomeProps {
   searchQuery: string;
@@ -26,8 +18,8 @@ interface HomeProps {
   customProducts: ProduitUI[];
   favorites: ProduitUI[];
   handleToggleFavorite: (id: string) => void;
-  triggerCallSimulation: (product: ProduitUI) => void;
-  triggerChatSimulation: (product: ProduitUI) => void;
+  onCallSeller: (product: ProduitUI) => void;
+  onChatSeller: (product: ProduitUI) => void;
 }
 
 export default function Home({
@@ -38,8 +30,8 @@ export default function Home({
   customProducts,
   favorites,
   handleToggleFavorite,
-  triggerCallSimulation,
-  triggerChatSimulation
+  onCallSeller,
+  onChatSeller
 }: HomeProps) {
   // Carousel pagination states
   const [featuredPage, setFeaturedPage] = useState(0);
@@ -48,7 +40,7 @@ export default function Home({
 
   // Dynamic filter products
   const getFeaturedProduitUIs = () => {
-    const list = [...customProducts.filter(p => p.isSponsorised && p.sponsorisedTag === 'SPONSORISÉ'), ...initialFeatured];
+    const list = customProducts.filter(p => p.isSponsorised);
     if (selectedCategory !== 'Tous') {
       return list.filter(p => p.categorie_id === selectedCategory);
     }
@@ -56,7 +48,7 @@ export default function Home({
   };
 
   const getPopularProduitUIs = () => {
-    const list = [...initialPopular];
+    const list = customProducts.filter(p => !p.isSponsorised);
     if (selectedCategory !== 'Tous') {
       return list.filter(p => p.categorie_id === selectedCategory);
     }
@@ -64,7 +56,7 @@ export default function Home({
   };
 
   const getSponsorised1ProduitUIs = () => {
-    const list = [...initialSponsorised1];
+    const list = customProducts.filter(p => p.isSponsorised).slice(3, 6);
     if (selectedCategory !== 'Tous') {
       return list.filter(p => p.categorie_id === selectedCategory);
     }
@@ -72,7 +64,7 @@ export default function Home({
   };
 
   const getHighlyRatedProduitUIs = () => {
-    const list = [...initialHighlyRated];
+    const list = customProducts;
     if (selectedCategory !== 'Tous') {
       return list.filter(p => p.categorie_id === selectedCategory);
     }
@@ -80,7 +72,7 @@ export default function Home({
   };
 
   const getSponsorised2ProduitUIs = () => {
-    const list = [...initialSponsorised2];
+    const list = customProducts.filter(p => p.isSponsorised).slice(6, 9);
     if (selectedCategory !== 'Tous') {
       return list.filter(p => p.categorie_id === selectedCategory);
     }
@@ -90,14 +82,7 @@ export default function Home({
   const isFiltering = searchQuery.trim() !== '' || selectedCategory !== 'Tous';
 
   const getFilteredAll = () => {
-    const combined = [
-      ...customProducts,
-      ...initialFeatured,
-      ...initialPopular,
-      ...initialSponsorised1,
-      ...initialHighlyRated,
-      ...initialSponsorised2
-    ];
+    const combined = customProducts;
 
     const uniqueMap = new Map<string, ProduitUI>();
     combined.forEach(p => uniqueMap.set(p.id, p));
@@ -195,8 +180,8 @@ export default function Home({
                       variant={product.isSponsorised ? 'detailed' : 'minimal'}
                       isFavorite={favorites.some(f => f.id === product.id)}
                       onToggleFavorite={handleToggleFavorite}
-                      onCallSeller={triggerCallSimulation}
-                      onChatSeller={triggerChatSimulation}
+                      onCallSeller={onCallSeller}
+                      onChatSeller={onChatSeller}
                     />
                   ))}
                 </div>
@@ -245,8 +230,8 @@ export default function Home({
                         variant="detailed"
                         isFavorite={favorites.some(f => f.id === product.id)}
                         onToggleFavorite={handleToggleFavorite}
-                        onCallSeller={triggerCallSimulation}
-                        onChatSeller={triggerChatSimulation}
+                        onCallSeller={onCallSeller}
+                        onChatSeller={onChatSeller}
                       />
                     ))}
                   </motion.div>
@@ -263,10 +248,10 @@ export default function Home({
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div>
                     <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-display">
-                      Sélections Populaires
+                      Dernières publications
                     </h2>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Les articles les plus appréciés du moment.
+                      Les articles récemment publiés sur la marketplace.
                     </p>
                   </div>
 
@@ -296,8 +281,8 @@ export default function Home({
                       variant="minimal"
                       isFavorite={favorites.some(f => f.id === product.id)}
                       onToggleFavorite={handleToggleFavorite}
-                      onCallSeller={triggerCallSimulation}
-                      onChatSeller={triggerChatSimulation}
+                      onCallSeller={onCallSeller}
+                      onChatSeller={onChatSeller}
                     />
                   ))}
                 </div>
@@ -322,8 +307,8 @@ export default function Home({
                       variant="detailed"
                       isFavorite={favorites.some(f => f.id === product.id)}
                       onToggleFavorite={handleToggleFavorite}
-                      onCallSeller={triggerCallSimulation}
-                      onChatSeller={triggerChatSimulation}
+                      onCallSeller={onCallSeller}
+                      onChatSeller={onChatSeller}
                     />
                   ))}
                 </div>
@@ -339,10 +324,10 @@ export default function Home({
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div>
                     <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-display">
-                      Les Mieux Notés
+                      Nouveautés
                     </h2>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      L'excellence validée par notre communauté.
+                      Découvrez les dernières créations des boutiques approuvées.
                     </p>
                   </div>
 
@@ -372,8 +357,8 @@ export default function Home({
                       variant="minimal"
                       isFavorite={favorites.some(f => f.id === product.id)}
                       onToggleFavorite={handleToggleFavorite}
-                      onCallSeller={triggerCallSimulation}
-                      onChatSeller={triggerChatSimulation}
+                      onCallSeller={onCallSeller}
+                      onChatSeller={onChatSeller}
                     />
                   ))}
                 </div>
@@ -398,8 +383,8 @@ export default function Home({
                       variant="detailed"
                       isFavorite={favorites.some(f => f.id === product.id)}
                       onToggleFavorite={handleToggleFavorite}
-                      onCallSeller={triggerCallSimulation}
-                      onChatSeller={triggerChatSimulation}
+                      onCallSeller={onCallSeller}
+                      onChatSeller={onChatSeller}
                     />
                   ))}
                 </div>

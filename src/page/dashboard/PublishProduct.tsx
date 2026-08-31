@@ -6,12 +6,13 @@ import { useAuth } from '../../context/AuthContext';
 import { checkPublishingQuota, createProduct, fetchCategories } from '../../lib/services';
 import { Categorie } from '../../types';
 import { uploadToCloudinary } from '../../lib/cloudinary';
+import { isPublishingQuotaExceeded } from '../../lib/mappers';
 
 export default function PublishProduct() {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  const [quota, setQuota] = useState({ used: 0, max: 0 });
+  const [quota, setQuota] = useState({ used: 0, max: 0, unlimited: false, enabled: true });
   const [loadingQuota, setLoadingQuota] = useState(true);
   
   const [formData, setFormData] = useState<{
@@ -36,8 +37,9 @@ export default function PublishProduct() {
   const [success, setSuccess] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [publishError, setPublishError] = useState('');
 
-  const isQuotaExceeded = quota.used >= quota.max;
+  const isQuotaExceeded = isPublishingQuotaExceeded(quota);
 
   const [dbCategories, setDbCategories] = useState<Categorie[]>([]);
 
@@ -107,8 +109,28 @@ export default function PublishProduct() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isQuotaExceeded || !user?.boutiqueId) return;
+
+    const images = formData.images.filter(Boolean);
+    const normalizedPhone = formData.telephone_contact.replace(/\D/g, '');
+    if (images.length < 1) {
+      setPublishError("Ajoutez au moins une photo de l'article.");
+      return;
+    }
+    if (!formData.categorie_id) {
+      setPublishError('Sélectionnez une catégorie.');
+      return;
+    }
+    if (Number(formData.prix) <= 0) {
+      setPublishError('Le prix doit être supérieur à zéro.');
+      return;
+    }
+    if (!/^2376\d{8}$/.test(normalizedPhone)) {
+      setPublishError('Saisissez un numéro camerounais valide au format +237 6XXXXXXXX.');
+      return;
+    }
     
     setPublishing(true);
+    setPublishError('');
     try {
       await createProduct(user.boutiqueId, {
         ...formData,
@@ -116,14 +138,10 @@ export default function PublishProduct() {
       });
       window.dispatchEvent(new Event('product_published'));
       setSuccess(true);
-      // Actualiser le quota après 2 secondes et rediriger
-      setTimeout(() => {
-        setQuota(prev => ({ ...prev, used: prev.used + 1 }));
-        setSuccess(false);
-        setFormData(prev => ({ ...prev, titre: '', description: '', prix: '', images: ['', '', ''], categorie_id: '', sous_categorie: '' }));
-      }, 2000);
+      navigate('/dashboard/products', { replace: true });
     } catch (err) {
       console.error(err);
+      setPublishError(err instanceof Error ? err.message : "La publication a échoué. Vérifiez les informations saisies.");
     } finally {
       setPublishing(false);
     }
@@ -150,7 +168,7 @@ export default function PublishProduct() {
               ? 'bg-rose-50 text-rose-700 border-rose-100' 
               : 'bg-emerald-50 text-emerald-700 border-emerald-100'
           }`}>
-            Quota : {quota.used} / {quota.max} gratuits
+            Quota : {quota.unlimited || !quota.enabled ? 'Illimité' : `${quota.used} / ${quota.max} gratuits`}
           </div>
         </div>
 
@@ -191,6 +209,13 @@ export default function PublishProduct() {
             <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl flex items-center gap-3 font-bold border border-emerald-100">
               <CheckCircle2 className="w-5 h-5" />
               Article publié avec succès !
+            </div>
+          )}
+
+          {publishError && (
+            <div className="bg-rose-50 text-rose-700 p-4 rounded-xl flex items-start gap-3 font-bold border border-rose-100">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              {publishError}
             </div>
           )}
 
@@ -264,7 +289,7 @@ export default function PublishProduct() {
                 type="number"
                 name="prix"
                 required
-                min="0"
+                min="1"
                 value={formData.prix}
                 onChange={handleChange}
                 className="appearance-none block w-full px-4 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-[#02603c] bg-slate-50/50"

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
+import { resolveProfileRole } from '../lib/mappers';
 
 // Define the User Profile structure matching our Supabase public.utilisateurs table
 export interface UserProfile {
@@ -9,6 +10,8 @@ export interface UserProfile {
   email: string;
   telephone?: string;
   role: 'Acheteur' | 'Vendeur' | 'Admin';
+  adminRole?: 'SuperAdmin' | 'Moderateur' | 'Commercial';
+  accountStatus: string;
   boutiqueId?: string | null;
   photo_profil_url?: string | null;
 }
@@ -17,13 +20,15 @@ interface AuthContextType {
   user: UserProfile | null;
   supabaseUser: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string, data: { nom: string; telephone?: string; role: 'Acheteur' | 'Vendeur' }) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserProfile['role'] }>;
+  signUp: (email: string, password: string, data: { nom: string; telephone?: string; role: 'Acheteur' | 'Vendeur' }) => Promise<{ success: boolean; error?: string; requiresEmailConfirmation?: boolean }>;
   signOut: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (password: string) => Promise<{ success: boolean; error?: string }>;
   updateUser: (data: Partial<UserProfile>) => Promise<void>;
   // Legacy methods (mapping to new ones or kept for compatibility during migration)
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean }) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserProfile['role'] }>;
+  register: (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean }) => Promise<{ success: boolean; error?: string; role?: string; requiresEmailConfirmation?: boolean }>;
   logout: () => Promise<void>;
 }
 
@@ -39,7 +44,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { data, error } = await supabase
         .from('utilisateurs')
-        .select('*, vendeurs(boutiques(id))')
+        .select('*, vendeurs(boutiques(id)), administrateurs(role)')
         .eq('id', userId)
         .maybeSingle();
 
@@ -53,6 +58,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const vendeursData = Array.isArray(data.vendeurs) ? data.vendeurs[0] : data.vendeurs;
         const boutiquesArray = vendeursData?.boutiques;
         const boutiqueId = Array.isArray(boutiquesArray) ? boutiquesArray[0]?.id : boutiquesArray?.id;
+        const adminData = Array.isArray(data.administrateurs)
+          ? data.administrateurs[0]
+          : data.administrateurs;
 
         // Map database response to UserProfile interface
         return {
@@ -60,7 +68,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           nom: data.nom,
           email: data.email,
           telephone: data.telephone,
-          role: data.type_utilisateur as 'Acheteur' | 'Vendeur' | 'Admin',
+          role: resolveProfileRole(data.type_utilisateur, adminData),
+          adminRole: adminData?.role,
+          accountStatus: data.statut_compte || 'Actif',
           boutiqueId: boutiqueId || null,
           photo_profil_url: null
         };
@@ -81,7 +91,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (session?.user) {
         setSupabaseUser(session.user);
         const profile = await fetchProfile(session.user.id);
-        setUser(profile);
+        if (profile?.accountStatus === 'Actif') {
+          setUser(profile);
+        } else {
+          await supabase.auth.signOut();
+          setSupabaseUser(null);
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
@@ -96,7 +112,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (session?.user) {
         setSupabaseUser(session.user);
         const profile = await fetchProfile(session.user.id);
-        setUser(profile);
+        if (profile?.accountStatus === 'Actif') {
+          setUser(profile);
+        } else {
+          setUser(null);
+        }
       } else {
         setSupabaseUser(null);
         setUser(null);
@@ -110,11 +130,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-  const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string; role?: string }> => {
+  const signIn = async (email: string, password: string): Promise<{ success: boolean; error?: string; role?: UserProfile['role'] }> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { success: false, error: error.message };
-      return { success: true, role: data.user.user_metadata?.role };
+      const profile = await fetchProfile(data.user.id);
+      if (!profile) {
+        await supabase.auth.signOut();
+        return { success: false, error: 'Profil utilisateur introuvable.' };
+      }
+      if (profile.accountStatus !== 'Actif') {
+        await supabase.auth.signOut();
+        return { success: false, error: 'Ce compte est suspendu ou désactivé.' };
+      }
+      setSupabaseUser(data.user);
+      setUser(profile);
+      return { success: true, role: profile?.role };
     } catch (err: any) {
       return { success: false, error: err.message || 'Une erreur est survenue' };
     }
@@ -124,9 +155,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     email: string, 
     password: string, 
     data: { nom: string; telephone?: string; role: 'Acheteur' | 'Vendeur'; nom_boutique?: string; localisation?: string }
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; error?: string; requiresEmailConfirmation?: boolean }> => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data: authData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -140,7 +171,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       });
       if (error) return { success: false, error: error.message };
-      return { success: true };
+      return { success: true, requiresEmailConfirmation: !authData.session };
     } catch (err: any) {
       return { success: false, error: err.message || 'Une erreur est survenue' };
     }
@@ -152,9 +183,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setSupabaseUser(null);
   };
 
+  const requestPasswordReset = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return error ? { success: false, error: error.message } : { success: true };
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    return error ? { success: false, error: error.message } : { success: true };
+  };
+
   // Legacy mappings
   const login = signIn;
-  const register = async (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean; nomBoutique?: string; localisation?: string }): Promise<{ success: boolean; error?: string; role?: string }> => {
+  const register = async (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean; nomBoutique?: string; localisation?: string }): Promise<{ success: boolean; error?: string; role?: string; requiresEmailConfirmation?: boolean }> => {
     const result = await signUp(data.email, data.password, {
       nom: data.nom,
       telephone: data.telephone,
@@ -167,29 +210,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = signOut;
 
   const updateUser = async (data: Partial<UserProfile>) => {
-    // In a real Supabase app, we'd update the public.utilisateurs table
     if (!user) return;
-    
-    try {
-      const { error } = await supabase
-        .from('utilisateurs')
-        .update({
-          nom: data.nom,
-          telephone: data.telephone,
-          photo_profil_url: data.photo_profil_url
-        })
-        .eq('id', user.id);
-        
-      if (error) throw error;
-      
-      setUser(prev => prev ? { ...prev, ...data } : null);
-    } catch (err) {
-      console.error('Error updating profile:', err);
-    }
+
+    const { data: updatedProfile, error } = await supabase.rpc('update_my_profile', {
+      profile_name: data.nom ?? user.nom,
+      profile_phone: data.telephone ?? user.telephone ?? '',
+    });
+    if (error) throw error;
+
+    setUser(prev => prev ? {
+      ...prev,
+      nom: updatedProfile.nom,
+      telephone: updatedProfile.telephone || undefined,
+    } : null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, supabaseUser, loading, signIn, signUp, signOut, updateUser, login, register, logout }}>
+    <AuthContext.Provider value={{ user, supabaseUser, loading, signIn, signUp, signOut, requestPasswordReset, updatePassword, updateUser, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Store, Save, MapPin, AlignLeft, ImagePlus, Loader2 } from 'lucide-react';
+import { AlertCircle, Store, Save, MapPin, AlignLeft, ImagePlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchUserBoutique, createOrUpdateBoutique } from '../../lib/services';
 import { uploadToCloudinary } from '../../lib/cloudinary';
@@ -18,6 +18,8 @@ export default function StoreSettings() {
   const [success, setSuccess] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [moderationStatus, setModerationStatus] = useState('EnAttente');
 
   useEffect(() => {
     if (user?.id) {
@@ -29,6 +31,7 @@ export default function StoreSettings() {
             localisation: data.localisation || '',
             logo_url: data.logo_url || ''
           });
+          setModerationStatus(data.statut_moderation || 'EnAttente');
         }
         setLoading(false);
       });
@@ -63,14 +66,17 @@ export default function StoreSettings() {
     if (!user) return;
     setSaving(true);
     setSuccess(false);
+    setSaveError('');
 
     try {
-      await createOrUpdateBoutique(user.id, formData);
+      const boutique = await createOrUpdateBoutique(user.id, formData);
+      setModerationStatus(boutique.statut_moderation || 'EnAttente');
       setSuccess(true);
       window.dispatchEvent(new Event('boutique-updated'));
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error(err);
+      setSaveError("Impossible d'enregistrer la boutique. Vérifiez votre connexion et les règles Supabase.");
     } finally {
       setSaving(false);
     }
@@ -92,6 +98,24 @@ export default function StoreSettings() {
         <p className="text-sm text-slate-500 mt-1">
           Personnalisez la vitrine de votre boutique telle qu'elle apparaîtra aux acheteurs.
         </p>
+        <div className="mt-4 flex items-center gap-2 text-xs font-bold">
+          <span className="text-slate-500">Modération :</span>
+          <span className={`px-3 py-1 rounded-full ${
+            moderationStatus === 'Approuvee'
+              ? 'bg-emerald-100 text-emerald-700'
+              : moderationStatus === 'Rejetee'
+                ? 'bg-rose-100 text-rose-700'
+                : 'bg-amber-100 text-amber-700'
+          }`}>
+            {moderationStatus === 'Approuvee' ? 'Approuvée' : moderationStatus === 'Rejetee' ? 'Rejetée' : 'En attente'}
+          </span>
+        </div>
+        {moderationStatus === 'Approuvee' && (
+          <div className="mt-4 bg-amber-50 text-amber-800 border border-amber-100 rounded-xl p-4 text-sm font-medium flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            Toute modification du nom, du logo, de la description ou de la localisation remettra la boutique en attente de validation.
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
@@ -191,6 +215,13 @@ export default function StoreSettings() {
         {success && (
           <div className="bg-emerald-50 text-emerald-700 p-4 rounded-xl text-sm font-bold border border-emerald-100">
             Modifications enregistrées avec succès !
+          </div>
+        )}
+
+        {saveError && (
+          <div className="bg-rose-50 text-rose-700 p-4 rounded-xl text-sm font-bold border border-rose-100 flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            {saveError}
           </div>
         )}
 

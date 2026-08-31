@@ -3,45 +3,52 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, FormEvent } from 'react';
+import React, { Suspense, useState, FormEvent } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Banner728x90 from './components/Banner728x90';
-import ContactModal from './components/ContactModal';
-import ChatModal from './components/ChatModal';
 import FavoritesDrawer from './components/FavoritesDrawer';
-import AddProductModal from './components/AddProductModal';
 
 // Pages placed in the requested /page directory
 import Home from './page/Home';
-import ProductDetails from './page/ProductDetails';
-import CategoryPage from './page/CategoryPage';
-import SellerPage from './page/SellerPage';
-import Login from './page/Login';
-import Register from './page/Register';
 
-// Dashboard Routes
-import DashboardLayout from './page/dashboard/DashboardLayout';
-import StoreSettings from './page/dashboard/StoreSettings';
-import PublishProduct from './page/dashboard/PublishProduct';
-import BoostPlans from './page/dashboard/BoostPlans';
-import SellerStats from './page/dashboard/SellerStats';
-import MyProducts from './page/dashboard/MyProducts';
-
-// Admin Routes
-import AdminLayout from './page/admin/AdminLayout';
-import AdminCategories from './page/admin/Categories';
-import AdminVendors from './page/admin/Vendors';
-import AdminSponsoringPlans from './page/admin/SponsoringPlans';
-import AdminAds from './page/admin/AdsManagement';
+const ProductDetails = React.lazy(() => import('./page/ProductDetails'));
+const CategoryPage = React.lazy(() => import('./page/CategoryPage'));
+const SellerPage = React.lazy(() => import('./page/SellerPage'));
+const Login = React.lazy(() => import('./page/Login'));
+const Register = React.lazy(() => import('./page/Register'));
+const ForgotPassword = React.lazy(() => import('./page/ForgotPassword'));
+const ResetPassword = React.lazy(() => import('./page/ResetPassword'));
+const DashboardLayout = React.lazy(() => import('./page/dashboard/DashboardLayout'));
+const StoreSettings = React.lazy(() => import('./page/dashboard/StoreSettings'));
+const PublishProduct = React.lazy(() => import('./page/dashboard/PublishProduct'));
+const BoostPlans = React.lazy(() => import('./page/dashboard/BoostPlans'));
+const SellerStats = React.lazy(() => import('./page/dashboard/SellerStats'));
+const MyProducts = React.lazy(() => import('./page/dashboard/MyProducts'));
+const EditProduct = React.lazy(() => import('./page/dashboard/EditProduct'));
+const SellerProfile = React.lazy(() => import('./page/dashboard/SellerProfile'));
+const AdminLayout = React.lazy(() => import('./page/admin/AdminLayout'));
+const AdminOverview = React.lazy(() => import('./page/admin/Overview'));
+const AdminCategories = React.lazy(() => import('./page/admin/Categories'));
+const AdminVendors = React.lazy(() => import('./page/admin/Vendors'));
+const AdminVerifications = React.lazy(() => import('./page/admin/Verifications'));
+const AdminTeam = React.lazy(() => import('./page/admin/AdminTeam'));
+const AdminAudit = React.lazy(() => import('./page/admin/AuditLog'));
+const AdminProducts = React.lazy(() => import('./page/admin/Products'));
+const AdminSponsoringPlans = React.lazy(() => import('./page/admin/SponsoringPlans'));
+const AdminAds = React.lazy(() => import('./page/admin/AdsManagement'));
+const AdminPayments = React.lazy(() => import('./page/admin/Payments'));
+const AdminQuotas = React.lazy(() => import('./page/admin/Quotas'));
 
 // Context
 import { AuthProvider } from './context/AuthContext';
 
 // Types and Data
 import { ProduitUI } from './types';
-import { ALL_PRODUCTS } from './data';
 import { Check } from 'lucide-react';
+import { fetchMyFavoriteProductIds, fetchPublicProducts, incrementProductClics, subscribeNewsletter, toggleMyFavorite } from './lib/services';
+import { supabase } from './lib/supabase';
+import { isDatabaseUuid } from './lib/mappers';
 
 export default function App() {
   // Common states shared between routes or accessed through navigation
@@ -50,60 +57,47 @@ export default function App() {
   
   const [customProducts, setCustomProducts] = useState<ProduitUI[]>([]);
   const [favorites, setFavorites] = useState<ProduitUI[]>([]);
+  const [catalogError, setCatalogError] = useState('');
   
   const [showFavorites, setShowFavorites] = useState(false);
-  const [showAddProduct, setShowAddProduct] = useState(false);
-  
-  const [contactProduct, setContactProduct] = useState<ProduitUI | null>(null);
-  const [chatProduct, setChatProduct] = useState<ProduitUI | null>(null);
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [newsletterError, setNewsletterError] = useState('');
 
-
-  // Add customized items from Sell wizard
-  const handleAddProduct = (newProd: ProduitUI) => {
-    setCustomProducts(prev => [newProd, ...prev]);
-  };
 
   React.useEffect(() => {
-    const loadLocalProducts = () => {
-      const dbProduits = JSON.parse(localStorage.getItem('dushop_produits_db') || '[]');
-      const boutiques = JSON.parse(localStorage.getItem('dushop_boutiques_db') || '[]');
-      
-      const mapped: ProduitUI[] = dbProduits.map((p: any) => {
-        const boutique = boutiques.find((b: any) => b.id === p.boutique_id);
-        const sellerName = boutique ? boutique.nom : 'Boutique Indépendante';
-        
-        return {
-          id: p.id,
-          boutique_id: p.boutique_id,
-          nom_boutique: sellerName,
-          titre: p.titre,
-          categorie_id: p.categorie_id === '11111111-1111-1111-1111-111111111111' ? 'Artisanat' :
-                    p.categorie_id === '22222222-2222-2222-2222-222222222222' ? 'Mode' :
-                    p.categorie_id === '33333333-3333-3333-3333-333333333333' ? 'Saveurs' : 'Cosmétiques',
-          prix: p.prix,
-          images: [p.image_url || 'https://via.placeholder.com/300?text=Produit'],
-          datePublication: p.date_publication || new Date().toISOString(),
-          statut: p.statut || 'Actif',
-          hasBadge: false,
-          isSponsorised: false,
-          description: p.description
-        };
-      });
-      setCustomProducts(mapped);
+    let isMounted = true;
+
+    const loadProducts = async () => {
+      try {
+        const products = await fetchPublicProducts();
+        if (!isMounted) return;
+        setCustomProducts(products);
+        setCatalogError('');
+        const favoriteIds = await fetchMyFavoriteProductIds().catch(() => []);
+        if (isMounted) setFavorites(products.filter(product => favoriteIds.includes(product.id)));
+      } catch {
+        if (isMounted) setCatalogError('Le catalogue est momentanément indisponible. Vérifiez votre connexion puis réessayez.');
+      }
     };
 
-    loadLocalProducts();
-    window.addEventListener('product_published', loadLocalProducts);
-    return () => window.removeEventListener('product_published', loadLocalProducts);
+    void loadProducts();
+    window.addEventListener('product_published', loadProducts);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      void loadProducts();
+    });
+    return () => {
+      isMounted = false;
+      window.removeEventListener('product_published', loadProducts);
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Toggle favorite actions
   const handleToggleFavorite = (prodId: string) => {
-    const allItems = [...customProducts, ...ALL_PRODUCTS];
-    const found = allItems.find(p => p.id === prodId);
+    const found = customProducts.find(p => p.id === prodId);
     if (!found) return;
 
     setFavorites(prev => {
@@ -114,27 +108,42 @@ export default function App() {
         return [...prev, found];
       }
     });
+
+    if (isDatabaseUuid(prodId)) {
+      void toggleMyFavorite(prodId).catch(error => {
+        console.warn('Favori non persisté:', error.message);
+      });
+    }
   };
 
   // Handle newsletter sign-up safely
-  const handleNewsletterSubmit = (e: FormEvent) => {
+  const handleNewsletterSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail.trim()) return;
-    setNewsletterSuccess(true);
-    setTimeout(() => {
+    setNewsletterLoading(true); setNewsletterError('');
+    try {
+      await subscribeNewsletter(newsletterEmail);
+      setNewsletterSuccess(true);
       setNewsletterEmail('');
-      setNewsletterSuccess(false);
-    }, 4000);
+    } catch {
+      setNewsletterError("L’inscription n’a pas pu être enregistrée. Réessayez.");
+    } finally {
+      setNewsletterLoading(false);
+    }
   };
 
-  const triggerCallSimulation = (product: ProduitUI) => {
-    setContactProduct(product);
-    import('./lib/services').then(m => m.incrementProductClics(product.id));
+  const contactSellerForCall = (product: ProduitUI) => {
+    const number = (product.whatsapp_contact || product.telephone_contact || '').replace(/\D/g, '');
+    if (!number) return;
+    void incrementProductClics(product.id, 'AppelDirect');
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(`Bonjour, je souhaite échanger par appel au sujet de votre article « ${product.titre} » sur DuShopPing.`)}`, '_blank', 'noopener,noreferrer');
   };
 
-  const triggerChatSimulation = (product: ProduitUI) => {
-    setChatProduct(product);
-    import('./lib/services').then(m => m.incrementProductClics(product.id));
+  const contactSellerOnWhatsApp = (product: ProduitUI) => {
+    const number = (product.whatsapp_contact || product.telephone_contact || '').replace(/\D/g, '');
+    if (!number) return;
+    void incrementProductClics(product.id, 'ClicWhatsApp');
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(`Bonjour, je suis intéressé(e) par votre article « ${product.titre} » sur DuShopPing. Est-il toujours disponible ?`)}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -155,12 +164,17 @@ export default function App() {
             setSelectedCategory={setSelectedCategory}
             favoritesCount={favorites.length}
             openFavorites={() => setShowFavorites(true)}
-            onAddProductClick={() => setShowAddProduct(true)}
           />
         </div>
 
         {/* 3. Central Router Outlets */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+          {catalogError && <div role="alert" className="mb-6 bg-rose-50 text-rose-700 border border-rose-100 rounded-2xl p-4 flex items-center justify-between gap-4"><span className="text-sm font-bold">{catalogError}</span><button onClick={() => window.location.reload()} className="shrink-0 bg-white px-3 py-2 rounded-xl text-xs font-bold">Réessayer</button></div>}
+          <Suspense fallback={
+            <div className="min-h-[50vh] flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full border-4 border-slate-200 border-t-brand animate-spin" aria-label="Chargement de la page" />
+            </div>
+          }>
           <Routes>
             <Route
               path="/"
@@ -173,8 +187,8 @@ export default function App() {
                   customProducts={customProducts}
                   favorites={favorites}
                   handleToggleFavorite={handleToggleFavorite}
-                  triggerCallSimulation={triggerCallSimulation}
-                  triggerChatSimulation={triggerChatSimulation}
+                  onCallSeller={contactSellerForCall}
+                  onChatSeller={contactSellerOnWhatsApp}
                 />
               }
             />
@@ -186,8 +200,8 @@ export default function App() {
                   customProducts={customProducts}
                   favorites={favorites}
                   handleToggleFavorite={handleToggleFavorite}
-                  triggerCallSimulation={triggerCallSimulation}
-                  triggerChatSimulation={triggerChatSimulation}
+                  onCallSeller={contactSellerForCall}
+                  onChatSeller={contactSellerOnWhatsApp}
                 />
               }
             />
@@ -199,8 +213,8 @@ export default function App() {
                   customProducts={customProducts}
                   favorites={favorites}
                   handleToggleFavorite={handleToggleFavorite}
-                  triggerCallSimulation={triggerCallSimulation}
-                  triggerChatSimulation={triggerChatSimulation}
+                  onCallSeller={contactSellerForCall}
+                  onChatSeller={contactSellerOnWhatsApp}
                 />
               }
             />
@@ -212,32 +226,43 @@ export default function App() {
                   customProducts={customProducts}
                   favorites={favorites}
                   handleToggleFavorite={handleToggleFavorite}
-                  triggerCallSimulation={triggerCallSimulation}
-                  triggerChatSimulation={triggerChatSimulation}
+                  onCallSeller={contactSellerForCall}
+                  onChatSeller={contactSellerOnWhatsApp}
                 />
               }
             />
 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<StoreSettings />} />
               <Route path="store" element={<StoreSettings />} />
               <Route path="products" element={<MyProducts />} />
+              <Route path="products/:id/edit" element={<EditProduct />} />
               <Route path="publish" element={<PublishProduct />} />
               <Route path="boost" element={<BoostPlans />} />
               <Route path="stats" element={<SellerStats />} />
+              <Route path="profile" element={<SellerProfile />} />
             </Route>
 
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminCategories />} />
+              <Route index element={<AdminOverview />} />
               <Route path="categories" element={<AdminCategories />} />
               <Route path="vendors" element={<AdminVendors />} />
+              <Route path="verifications" element={<AdminVerifications />} />
+              <Route path="team" element={<AdminTeam />} />
+              <Route path="audit" element={<AdminAudit />} />
+              <Route path="products" element={<AdminProducts />} />
               <Route path="sponsoring" element={<AdminSponsoringPlans />} />
               <Route path="ads" element={<AdminAds />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="quotas" element={<AdminQuotas />} />
             </Route>
           </Routes>
+          </Suspense>
         </main>
 
         {/* 4. Footer Section */}
@@ -265,17 +290,7 @@ export default function App() {
                   <li>
                     <a href="/" className="hover:text-emerald-450 transition-colors">La place du marché</a>
                   </li>
-                  <li>
-                    <button onClick={() => setShowAddProduct(true)} className="hover:text-emerald-450 transition-colors cursor-pointer text-left">
-                      Vendre des créations
-                    </button>
-                  </li>
-                  <li>
-                    <a href="/#promotions" onClick={(e) => { e.preventDefault(); alert("Page Promotions en cours de construction"); }} className="hover:text-emerald-450 transition-colors">Promotions & Codes</a>
-                  </li>
-                  <li>
-                    <a href="/#faq" onClick={(e) => { e.preventDefault(); alert("Page FAQ en cours de construction"); }} className="hover:text-emerald-450 transition-colors">Foire aux questions (FAQ)</a>
-                  </li>
+                  <li><a href="/dashboard/publish" className="hover:text-emerald-450 transition-colors">Vendre des créations</a></li>
                 </ul>
               </div>
 
@@ -290,9 +305,6 @@ export default function App() {
                   </li>
                   <li>
                     <a href="/#privacy" onClick={(e) => { e.preventDefault(); alert("Politique de confidentialité en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Politique de confidentialité</a>
-                  </li>
-                  <li>
-                    <a href="/#tips" onClick={(e) => { e.preventDefault(); alert("Conseils aux acheteurs en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Conseils aux acheteurs</a>
                   </li>
                   <li>
                     <a href="mailto:support@dushop.com" className="hover:text-emerald-450 transition-colors font-sans">Support Client</a>
@@ -315,7 +327,8 @@ export default function App() {
                     <span>Merci ! Votre inscription est prise en compte.</span>
                   </div>
                 ) : (
-                  <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+                  <form onSubmit={handleNewsletterSubmit} className="space-y-2">
+                    <div className="flex gap-2">
                     <input
                       type="email"
                       required
@@ -326,10 +339,13 @@ export default function App() {
                     />
                     <button
                       type="submit"
-                      className="bg-accent-yellow hover:bg-accent-yellow-hover text-slate-900 font-bold px-3.5 py-2.5 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer"
+                      disabled={newsletterLoading}
+                      className="bg-accent-yellow hover:bg-accent-yellow-hover text-slate-900 font-bold px-3.5 py-2.5 rounded-xl text-xs sm:text-sm transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      Rejoindre
+                      {newsletterLoading ? 'Envoi…' : 'Rejoindre'}
                     </button>
+                    </div>
+                    {newsletterError && <p className="text-xs text-rose-400">{newsletterError}</p>}
                   </form>
                 )}
               </div>
@@ -356,37 +372,14 @@ export default function App() {
 
         {/* 5. Drawers & Popup Modals */}
         
-        {/* Contact info overlay */}
-        <ContactModal
-          product={contactProduct}
-          onClose={() => setContactProduct(null)}
-          onOpenChat={(prod) => {
-            setContactProduct(null);
-            setChatProduct(prod);
-          }}
-        />
-
-        {/* Chat messages overlay drawer */}
-        <ChatModal
-          product={chatProduct}
-          onClose={() => setChatProduct(null)}
-        />
-
         {/* Favorites slide-over page */}
         <FavoritesDrawer
           isOpen={showFavorites}
           onClose={() => setShowFavorites(false)}
           favorites={favorites}
           onRemove={(id) => setFavorites(prev => prev.filter(f => f.id !== id))}
-          onCallSeller={triggerCallSimulation}
-          onChatSeller={triggerChatSimulation}
-        />
-
-        {/* Selling form wizard overlay */}
-        <AddProductModal
-          isOpen={showAddProduct}
-          onClose={() => setShowAddProduct(false)}
-          onAddProduct={handleAddProduct}
+          onCallSeller={contactSellerForCall}
+          onChatSeller={contactSellerOnWhatsApp}
         />
 
       </div>

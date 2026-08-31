@@ -3,34 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ExternalAdRecord, fetchActiveExternalAds } from '../lib/services';
 
 export default function Banner728x90() {
   const [adIndex, setAdIndex] = useState(0);
+  const [externalAds, setExternalAds] = useState<ExternalAdRecord[]>([]);
 
-  const ads = [
-    {
-      title: "Bannière Publicitaire 728x90",
-      desc: "Promouvez vos créations artisanales ici ! Touchez des milliers d'acheteurs passionnés d'art africain chic.",
-      action: "En savoir plus"
-    },
-    {
-      title: "🌍 Semaine de l'Éco-Responsabilité",
-      desc: "-15% sur tous les paniers et vanneries en fibres naturelles avec le code DUSHOPGREEN.",
-      action: "Acheter"
-    },
-    {
-      title: "✨ Les Créateurs du Bénin à l'Honneur",
-      desc: "Découvrez l'exposition virtuelle exclusive de bronzes sacrés et masques en bois royal.",
-      action: "Découvrir"
-    }
-  ];
+  useEffect(() => {
+    let mounted = true;
+    fetchActiveExternalAds('TopRecherche')
+      .then(data => { if (mounted) setExternalAds(data); })
+      .catch(error => console.warn('Publicités Supabase indisponibles:', error));
+    return () => { mounted = false; };
+  }, []);
 
   const handleNextAd = () => {
-    setAdIndex((prev) => (prev + 1) % ads.length);
+    if (externalAds.length > 1) setAdIndex((prev) => (prev + 1) % externalAds.length);
   };
+
+  const externalAd = externalAds[adIndex % Math.max(externalAds.length, 1)];
+  if (!externalAd) return null;
 
   return (
     <AnimatePresence>
@@ -45,15 +40,15 @@ export default function Banner728x90() {
         </span>
         <div className="flex items-center justify-center gap-3 text-center max-w-3xl px-8">
           <Megaphone className="w-4 h-4 text-[#02603c] shrink-0 animate-bounce hidden sm:inline" />
-          <p className="text-xs sm:text-sm font-medium text-blue-900 leading-tight">
-            <span className="font-bold text-[#02603c] mr-1.5">{ads[adIndex].titre}:</span>
-            {ads[adIndex].desc}
-          </p>
-          <button 
-            onClick={handleNextAd} 
+            <a href={externalAd.lien_redirection} target="_blank" rel="noreferrer" className="flex items-center gap-3 min-w-0">
+              <img src={externalAd.image_banniere_url} alt={externalAd.nom_entreprise} className="h-10 sm:h-12 max-w-[65vw] object-contain rounded" />
+              <span className="text-xs sm:text-sm font-bold text-[#02603c] hidden sm:inline">{externalAd.nom_entreprise}</span>
+            </a>
+          <button
+            onClick={handleNextAd}
             className="text-[10px] bg-white text-blue-800 font-bold px-2 py-0.5 rounded shadow-xs hover:bg-[#02603c] hover:text-white transition-all shrink-0 cursor-pointer"
           >
-            {ads[adIndex].action}
+            Suivante
           </button>
         </div>
       </motion.div>

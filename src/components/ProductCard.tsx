@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, MessageSquare, Star, BadgeCheck, Heart, MapPin } from 'lucide-react';
+import { Phone, MessageSquare, Star, BadgeCheck, Heart, MapPin, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ProduitUI } from '../types';
 
@@ -74,12 +74,12 @@ export default function ProductCard({
 
         {/* Image frame */}
         <div className="aspect-[4/3] bg-slate-50 w-full overflow-hidden relative group">
-          <img
+          {product.images[0] ? <img
             src={product.images[0]}
             alt={product.titre}
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+          /> : <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2"><ImageIcon className="w-8 h-8" /><span className="text-xs">Aucune image</span></div>}
         </div>
 
         {/* Card Body */}
@@ -92,7 +92,7 @@ export default function ProductCard({
                 className="flex items-center gap-1 font-semibold text-slate-800 hover:text-emerald-750 hover:underline"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate(`/seller/${encodeURIComponent(product.nom_boutique)}`);
+                  navigate(`/seller/${encodeURIComponent(product.boutique_id || product.nom_boutique)}`);
                 }}
               >
                 <span className="truncate max-w-[120px]">{product.nom_boutique}</span>
@@ -186,18 +186,18 @@ export default function ProductCard({
 
         {/* Large backplane pricing as watermark effect if requested, or clean product aspect ratio */}
         <div className="aspect-[4/3] bg-slate-50 overflow-hidden relative group">
-          <img
+          {product.images[0] ? <img
             src={product.images[0]}
             alt={product.titre}
             referrerPolicy="no-referrer"
             className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
-          />
+          /> : <div className="w-full h-full flex items-center justify-center text-slate-300"><ImageIcon className="w-7 h-7" /></div>}
           {/* Subtle watermark in image to hint at original design feel but kept extremely readable */}
           <div 
             className="absolute bottom-2 left-2 bg-black/40 hover:bg-black/65 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-white font-semibold z-10"
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/seller/${encodeURIComponent(product.nom_boutique)}`);
+              navigate(`/seller/${encodeURIComponent(product.boutique_id || product.nom_boutique)}`);
             }}
           >
             {product.nom_boutique}

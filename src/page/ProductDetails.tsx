@@ -3,28 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Phone, MessageSquare, Star, BadgeCheck, Heart, MapPin, ArrowLeft, Shield, Sparkles, AlertCircle } from 'lucide-react';
+import { Phone, MessageSquare, Heart, MapPin, ArrowLeft, Shield, Sparkles, AlertCircle, ChevronLeft, ChevronRight, Store } from 'lucide-react';
 import { ProduitUI } from '../types';
-import { ALL_PRODUCTS, SELLERS } from '../data';
 import ProductCard from '../components/ProductCard';
+import { fetchProductById, incrementProductClics, incrementProductViews } from '../lib/services';
 
 interface ProductDetailsProps {
   customProducts: ProduitUI[];
   favorites: ProduitUI[];
   handleToggleFavorite: (id: string) => void;
-  triggerCallSimulation: (product: ProduitUI) => void;
-  triggerChatSimulation: (product: ProduitUI) => void;
+  onCallSeller: (product: ProduitUI) => void;
+  onChatSeller: (product: ProduitUI) => void;
 }
 
 export default function ProductDetails({
   customProducts,
   favorites,
   handleToggleFavorite,
-  triggerCallSimulation,
-  triggerChatSimulation
+  onCallSeller,
+  onChatSeller
 }: ProductDetailsProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -34,9 +34,51 @@ export default function ProductDetails({
     window.scrollTo({ top: 0, behavior: 'instant' as any });
   }, [id]);
 
-  // Merge default data and custom ones to search for product
-  const combined = [...customProducts, ...ALL_PRODUCTS];
-  const product = combined.find(p => p.id === id);
+  const cachedProduct = customProducts.find(p => p.id === id);
+  const [loadedProduct, setLoadedProduct] = useState<ProduitUI | null>(null);
+  const [loadingProduct, setLoadingProduct] = useState(!cachedProduct);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const product = cachedProduct || loadedProduct;
+
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [product?.id]);
+
+  useEffect(() => {
+    let active = true;
+    setLoadedProduct(null);
+
+    if (!id || cachedProduct) {
+      setLoadingProduct(false);
+      return () => { active = false; };
+    }
+
+    setLoadingProduct(true);
+    void fetchProductById(id)
+      .then(result => {
+        if (active) setLoadedProduct(result);
+      })
+      .catch(() => {
+        if (active) setLoadedProduct(null);
+      })
+      .finally(() => {
+        if (active) setLoadingProduct(false);
+      });
+
+    return () => { active = false; };
+  }, [id, cachedProduct]);
+
+  useEffect(() => {
+    if (product?.id && product.id.length === 36) void incrementProductViews(product.id);
+  }, [product?.id]);
+
+  if (loadingProduct) {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4 text-center text-slate-500">
+        Chargement de l'article...
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -61,22 +103,22 @@ export default function ProductDetails({
     );
   }
 
-  // Get matching seller details or fallback
-  const sellerInfo = SELLERS[product.nom_boutique] || {
-    nom: product.nom_boutique,
-    rating: 4.8,
-    hasBadge: product.hasBadge,
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&fit=crop&q=80',
-    telephone: product.telephone_contact || '+237 600 00 00 00',
-    whatsapp: product.whatsapp_contact || '237600000000',
-    localisation: product.localisation || 'Douala, Cameroun',
-    description: 'Vendeur vérifié de la communauté DuShopPing engagé pour la qualité locale.'
+  const isFav = favorites.some(f => f.id === product.id);
+  const galleryImages = (product.images || []).filter(Boolean);
+  const selectedImage = galleryImages[selectedImageIndex] || galleryImages[0];
+
+  const openSellerWhatsApp = (intent: 'call' | 'message') => {
+    const whatsappNumber = (product.whatsapp_contact || product.telephone_contact || '').replace(/\D/g, '');
+    if (!whatsappNumber) return;
+    const text = intent === 'call'
+      ? 'Bonjour, je souhaite échanger par appel au sujet de votre article « ' + product.titre + ' » sur DuShopPing.'
+      : 'Bonjour, je suis intéressé(e) par votre article « ' + product.titre + ' » sur DuShopPing. Est-il toujours disponible ?';
+    void incrementProductClics(product.id, intent === 'call' ? 'AppelDirect' : 'ClicWhatsApp');
+    window.open('https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
   };
 
-  const isFav = favorites.some(f => f.id === product.id);
-
   // Find similar products in the same category (excluding current)
-  const similarProducts = combined
+  const similarProducts = customProducts
     .filter(p => p.categorie_id === product.categorie_id && p.id !== product.id)
     .slice(0, 3);
 
@@ -106,12 +148,24 @@ export default function ProductDetails({
         {/* Left Column: Visual Area (5 Cols) */}
         <div className="md:col-span-5 space-y-4">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100/60 group/image">
-            <img
-              src={product.images[0]}
-              alt={product.titre}
-              className="w-full h-full object-cover transition-all duration-500 group-hover/image:scale-105"
-              referrerPolicy="no-referrer"
-            />
+            {selectedImage ? (
+              <img
+                src={selectedImage}
+                alt={product.titre + ' — photo ' + (selectedImageIndex + 1)}
+                className="w-full h-full object-cover transition-all duration-500 group-hover/image:scale-105"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-slate-400">Image indisponible</div>
+            )}
+
+            {galleryImages.length > 1 && (
+              <>
+                <button type="button" onClick={() => setSelectedImageIndex(index => (index - 1 + galleryImages.length) % galleryImages.length)} aria-label="Image précédente" className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-slate-800 shadow-md flex items-center justify-center hover:bg-white"><ChevronLeft className="w-5 h-5" /></button>
+                <button type="button" onClick={() => setSelectedImageIndex(index => (index + 1) % galleryImages.length)} aria-label="Image suivante" className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-slate-800 shadow-md flex items-center justify-center hover:bg-white"><ChevronRight className="w-5 h-5" /></button>
+                <span className="absolute bottom-3 right-3 bg-slate-900/70 text-white text-xs font-bold px-2.5 py-1 rounded-full">{selectedImageIndex + 1}/{galleryImages.length}</span>
+              </>
+            )}
             
             {/* Absolute Badges over image */}
             <div className="absolute top-4 left-4 flex flex-col gap-2">
@@ -135,6 +189,16 @@ export default function ProductDetails({
               <Heart className={`w-5 h-5 ${isFav ? 'fill-current' : ''}`} />
             </button>
           </div>
+
+          {galleryImages.length > 1 && (
+            <div className="grid grid-cols-3 gap-3" aria-label="Galerie du produit">
+              {galleryImages.map((image, index) => (
+                <button key={image + index} type="button" onClick={() => setSelectedImageIndex(index)} className={'aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all ' + (selectedImageIndex === index ? 'border-emerald-600 ring-2 ring-emerald-100' : 'border-slate-100 hover:border-slate-300')} aria-label={'Afficher la photo ' + (index + 1)}>
+                  <img src={image} alt={product.titre + ' miniature ' + (index + 1)} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
           
           <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100/40 text-[11px] text-slate-500 flex items-start gap-2">
             <Shield className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -181,51 +245,33 @@ export default function ProductDetails({
           <div className="bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-100 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <img
-                  src={sellerInfo.avatar}
-                  alt={sellerInfo.nom}
-                  className="w-12 h-12 rounded-xl object-cover border border-slate-200"
-                  referrerPolicy="no-referrer"
-                />
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center border border-emerald-200"><Store className="w-6 h-6" /></div>
                 <div>
                   <div className="flex items-center gap-1">
-                    <Link to={`/seller/${encodeURIComponent(sellerInfo.nom)}`} className="font-bold text-sm text-slate-900 hover:text-emerald-700 hover:underline">
-                      {sellerInfo.nom}
+                    <Link to={`/seller/${encodeURIComponent(product.boutique_id || product.nom_boutique)}`} className="font-bold text-sm text-slate-900 hover:text-emerald-700 hover:underline">
+                      {product.nom_boutique}
                     </Link>
-                    {sellerInfo.hasBadge && (
-                      <BadgeCheck className="w-4 h-4 text-emerald-600 fill-emerald-100" />
-                    )}
                   </div>
-                  <div className="flex items-center gap-2 text-slate-500 text-xs mt-0.5">
-                    <div className="flex items-center gap-0.5 text-amber-500">
-                      <Star className="w-3.5 h-3.5 fill-current" />
-                      <span className="font-bold">{sellerInfo.rating}</span>
-                    </div>
-                    <span>•</span>
-                    <span className="flex items-center gap-0.5">
+                  {product.localisation && <div className="flex items-center gap-2 text-slate-500 text-xs mt-0.5"><span className="flex items-center gap-0.5">
                       <MapPin className="w-3" />
-                      <span>{sellerInfo.localisation}</span>
-                    </span>
-                  </div>
+                      <span>{product.localisation}</span>
+                    </span></div>}
                 </div>
               </div>
 
               <Link
-                to={`/seller/${encodeURIComponent(sellerInfo.nom)}`}
+                to={`/seller/${encodeURIComponent(product.boutique_id || product.nom_boutique)}`}
                 className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
               >
                 Visiter la Boutique
               </Link>
             </div>
 
-            <p className="text-xs text-slate-500 italic">
-              "{sellerInfo.description}"
-            </p>
-
             {/* CTA Contact Buttons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               <button
-                onClick={() => triggerCallSimulation(product)}
+                onClick={() => openSellerWhatsApp('call')}
+                disabled={!product.whatsapp_contact && !product.telephone_contact}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm py-3.5 rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Phone className="w-4 h-4 shrink-0" />
@@ -233,7 +279,8 @@ export default function ProductDetails({
               </button>
 
               <button
-                onClick={() => triggerChatSimulation(product)}
+                onClick={() => openSellerWhatsApp('message')}
+                disabled={!product.whatsapp_contact && !product.telephone_contact}
                 className="bg-emerald-950 hover:bg-slate-900 text-white font-extrabold text-sm py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-900"
               >
                 <MessageSquare className="w-4 h-4 text-emerald-450 shrink-0" />
@@ -265,8 +312,8 @@ export default function ProductDetails({
                 variant="minimal"
                 isFavorite={favorites.some(f => f.id === prod.id)}
                 onToggleFavorite={handleToggleFavorite}
-                onCallSeller={triggerCallSimulation}
-                onChatSeller={triggerChatSimulation}
+                onCallSeller={onCallSeller}
+                onChatSeller={onChatSeller}
               />
             ))}
           </div>

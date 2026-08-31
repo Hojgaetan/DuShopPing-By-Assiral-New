@@ -1,13 +1,17 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Users, Zap, Image as ImageIcon, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, LayoutGrid, Users, Zap, Image as ImageIcon, ArrowLeft, ShieldCheck, CreditCard, Gauge, PackageSearch, FileCheck2, UserCog, ScrollText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminLayout() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Redirection de sécurité (simplifiée pour démo)
+  if (loading) {
+    return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-10 h-10 rounded-full border-4 border-slate-200 border-t-indigo-600 animate-spin" /></div>;
+  }
+
   if (!user || user.role !== 'Admin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -22,12 +26,23 @@ export default function AdminLayout() {
     );
   }
 
+  const adminRole = user.adminRole || 'Moderateur';
   const navItems = [
-    { name: 'Catégories', icon: LayoutGrid, path: '/admin/categories' },
-    { name: 'Vendeurs & Annonces', icon: Users, path: '/admin/vendors' },
-    { name: 'Plans Sponsoring', icon: Zap, path: '/admin/sponsoring' },
-    { name: 'Publicités Bannières', icon: ImageIcon, path: '/admin/ads' },
+    { name: 'Vue d’ensemble', icon: LayoutDashboard, path: '/admin', end: true, roles: ['SuperAdmin', 'Moderateur', 'Commercial'] },
+    { name: 'Catégories', icon: LayoutGrid, path: '/admin/categories', roles: ['SuperAdmin', 'Moderateur'] },
+    { name: 'Vendeurs & Annonces', icon: Users, path: '/admin/vendors', roles: ['SuperAdmin', 'Moderateur'] },
+    { name: 'Vérifications', icon: FileCheck2, path: '/admin/verifications', roles: ['SuperAdmin', 'Moderateur'] },
+    { name: 'Articles', icon: PackageSearch, path: '/admin/products', roles: ['SuperAdmin', 'Moderateur'] },
+    { name: 'Plans Sponsoring', icon: Zap, path: '/admin/sponsoring', roles: ['SuperAdmin', 'Commercial'] },
+    { name: 'Publicités Bannières', icon: ImageIcon, path: '/admin/ads', roles: ['SuperAdmin', 'Commercial'] },
+    { name: 'Paiements Boost', icon: CreditCard, path: '/admin/payments', roles: ['SuperAdmin', 'Commercial'] },
+    { name: 'Quotas', icon: Gauge, path: '/admin/quotas', roles: ['SuperAdmin'] },
+    { name: 'Équipe admin', icon: UserCog, path: '/admin/team', roles: ['SuperAdmin'] },
+    { name: 'Journal d’activité', icon: ScrollText, path: '/admin/audit', roles: ['SuperAdmin'] },
   ];
+  const visibleNavItems = navItems.filter(item => item.roles.includes(adminRole));
+  const currentItem = navItems.find(item => item.end ? location.pathname === item.path : location.pathname.startsWith(item.path));
+  const isAllowed = !currentItem || currentItem.roles.includes(adminRole);
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
@@ -40,15 +55,16 @@ export default function AdminLayout() {
             </div>
             <div>
               <h3 className="font-extrabold text-slate-900 truncate">{user.nom}</h3>
-              <p className="text-xs text-slate-500">CMS Admin</p>
+              <p className="text-xs text-slate-500">{adminRole}</p>
             </div>
           </div>
 
           <nav className="space-y-1.5">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
+                end={item.end}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
                     isActive
@@ -77,7 +93,7 @@ export default function AdminLayout() {
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0">
-        <Outlet />
+        {isAllowed ? <Outlet /> : <div className="bg-rose-50 border border-rose-100 text-rose-700 rounded-2xl p-6"><h2 className="font-extrabold text-lg">Permission insuffisante</h2><p className="text-sm mt-1">Votre rôle {adminRole} ne permet pas d’accéder à cette section.</p></div>}
       </main>
     </div>
   );

@@ -7,23 +7,22 @@ import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, HelpCircle } from 'lucide-react';
 import { ProduitUI } from '../types';
-import { ALL_PRODUCTS } from '../data';
 import ProductCard from '../components/ProductCard';
 
 interface CategoryPageProps {
   customProducts: ProduitUI[];
   favorites: ProduitUI[];
   handleToggleFavorite: (id: string) => void;
-  triggerCallSimulation: (product: ProduitUI) => void;
-  triggerChatSimulation: (product: ProduitUI) => void;
+  onCallSeller: (product: ProduitUI) => void;
+  onChatSeller: (product: ProduitUI) => void;
 }
 
 export default function CategoryPage({
   customProducts,
   favorites,
   handleToggleFavorite,
-  triggerCallSimulation,
-  triggerChatSimulation
+  onCallSeller,
+  onChatSeller
 }: CategoryPageProps) {
   const { categoryName } = useParams<{ categoryName: string }>();
   const navigate = useNavigate();
@@ -34,11 +33,8 @@ export default function CategoryPage({
 
   const categoryDecoded = categoryName ? decodeURIComponent(categoryName) : 'Tous';
 
-  // Merge datasets
-  const combined = [...customProducts, ...ALL_PRODUCTS];
-  
   // Filter products by category
-  const filteredProducts = combined.filter(p => 
+  const filteredProducts = customProducts.filter(p =>
     categoryDecoded === 'Tous' || p.categorie_id.toLowerCase() === categoryDecoded.toLowerCase()
   );
 
@@ -97,8 +93,8 @@ export default function CategoryPage({
                 variant={product.isSponsorised ? 'detailed' : 'minimal'}
                 isFavorite={favorites.some(f => f.id === product.id)}
                 onToggleFavorite={handleToggleFavorite}
-                onCallSeller={triggerCallSimulation}
-                onChatSeller={triggerChatSimulation}
+                onCallSeller={onCallSeller}
+                onChatSeller={onChatSeller}
               />
             ))}
           </div>

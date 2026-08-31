@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Bell, Heart, ChevronDown, Sparkles, ShoppingBag, ArrowRight, Store, ShieldCheck, Menu, X } from 'lucide-react';
+import { Search, Bell, Heart, ChevronDown, ShoppingBag, ArrowRight, Store, ShieldCheck, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
-import { fetchUserBoutique, fetchMegaMenuData } from '../lib/services';
+import { fetchUserBoutique, fetchMegaMenuData, fetchMyNotifications, markNotificationRead, NotificationRecord } from '../lib/services';
 
 interface HeaderProps {
   searchQuery: string;
@@ -17,7 +17,6 @@ interface HeaderProps {
   setSelectedCategory: (cat: string) => void;
   favoritesCount: number;
   openFavorites: () => void;
-  onAddProductClick: () => void;
 }
 
 interface ProductVignette {
@@ -45,14 +44,43 @@ export default function Header({
   selectedCategory,
   setSelectedCategory,
   favoritesCount,
-  openFavorites,
-  onAddProductClick
+  openFavorites
 }: HeaderProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [boutiqueLogo, setBoutiqueLogo] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  const loadNotifications = useCallback(async () => {
+    if (!user) { setNotifications([]); return; }
+    setNotificationsLoading(true);
+    try { setNotifications(await fetchMyNotifications()); } catch { setNotifications([]); }
+    finally { setNotificationsLoading(false); }
+  }, [user]);
+
+  useEffect(() => {
+    void loadNotifications();
+    if (!user) return;
+    const timer = window.setInterval(() => void loadNotifications(), 60000);
+    return () => window.clearInterval(timer);
+  }, [user, loadNotifications]);
+
+  const openNotification = async (notification: NotificationRecord) => {
+    if (!notification.est_lue) {
+      await markNotificationRead(notification.id).catch(() => undefined);
+      setNotifications(current => current.map(item => item.id === notification.id ? { ...item, est_lue: true } : item));
+    }
+    setShowNotifications(false);
+    if (notification.lien) navigate(notification.lien);
+  };
+
+  const markAllNotifications = async () => {
+    await markNotificationRead().catch(() => undefined);
+    setNotifications(current => current.map(item => ({ ...item, est_lue: true })));
+  };
 
   useEffect(() => {
     const loadBoutique = () => {
@@ -95,8 +123,8 @@ export default function Header({
 
   const [megaCategories, setMegaCategories] = useState<MegaCategory[]>([]);
 
-  useEffect(() => {
-    fetchMegaMenuData().then(({ categories, produits }) => {
+  const loadMegaMenu = useCallback(() => {
+    void fetchMegaMenuData().then(({ categories, produits }) => {
       const formatted: MegaCategory[] = categories.map((cat: any) => ({
         label: cat.nom,
         value: cat.nom,
@@ -119,6 +147,12 @@ export default function Header({
     });
   }, []);
 
+  useEffect(() => {
+    loadMegaMenu();
+    window.addEventListener('product_published', loadMegaMenu);
+    return () => window.removeEventListener('product_published', loadMegaMenu);
+  }, [loadMegaMenu]);
+
   // Automatically reset hovered subcategory to the first option when category hover shifts
   useEffect(() => {
     if (hoveredCategory) {
@@ -130,12 +164,6 @@ export default function Header({
       setHoveredSubcategory(null);
     }
   }, [hoveredCategory]);
-
-  const notifications = [
-    { id: 1, text: "💬 Amara l'Artisan a lu votre message.", time: "Il y a 5 min", unread: true },
-    { id: 2, text: "✨ Nouveau : Les Épices Berbère de retour en stock !", time: "Il y a 1 h", unread: true },
-    { id: 3, text: "⭐ Événement : Exposition Virtuelle de Statuettes Royales.", time: "Il y a 1 jour", unread: false },
-  ];
 
   // Get active items belonging to subcategory
   const getSubcategoryProducts = () => {
@@ -217,6 +245,26 @@ export default function Header({
                 <span className="hidden lg:block text-sm font-bold text-slate-700">
                   {user.role === 'Admin' ? 'Administrateur' : user.role === 'Vendeur' ? 'Compte Vendeur' : 'Acheteur'}
                 </span>
+
+                <button onClick={openFavorites} className="relative p-2 rounded-full text-slate-600 hover:bg-rose-50 hover:text-rose-600" aria-label="Mes favoris">
+                  <Heart className="w-5 h-5" />
+                  {favoritesCount > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">{Math.min(favoritesCount, 99)}</span>}
+                </button>
+
+                <div className="relative">
+                  <button onClick={() => { setShowNotifications(value => !value); setShowProfileMenu(false); void loadNotifications(); }} className="relative p-2 rounded-full text-slate-600 hover:bg-slate-100 hover:text-indigo-600" aria-label="Notifications">
+                    <Bell className="w-5 h-5" />
+                    {notifications.some(item => !item.est_lue) && <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">{Math.min(notifications.filter(item => !item.est_lue).length, 99)}</span>}
+                  </button>
+                  <AnimatePresence>
+                    {showNotifications && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[70]">
+                      <div className="p-4 border-b border-slate-100 flex items-center justify-between"><div><p className="font-extrabold text-slate-900">Notifications</p><p className="text-[11px] text-slate-400">{notifications.filter(item => !item.est_lue).length} non lue(s)</p></div>{notifications.some(item => !item.est_lue) && <button onClick={() => void markAllNotifications()} className="text-xs font-bold text-indigo-600">Tout marquer comme lu</button>}</div>
+                      <div className="max-h-96 overflow-y-auto">{notificationsLoading && notifications.length === 0 ? <div className="p-8 text-center text-sm text-slate-400">Chargement…</div> : notifications.length === 0 ? <div className="p-8 text-center text-sm text-slate-400">Aucune notification.</div> : notifications.map(notification => <button key={notification.id} onClick={() => void openNotification(notification)} className={`w-full text-left p-4 border-b border-slate-50 hover:bg-slate-50 flex gap-3 ${notification.est_lue ? 'bg-white' : 'bg-indigo-50/50'}`}>
+                        <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${notification.est_lue ? 'bg-slate-200' : 'bg-indigo-600'}`} /><span className="min-w-0"><span className="block text-sm font-bold text-slate-800">{notification.titre}</span><span className="block text-xs text-slate-500 mt-1 leading-relaxed">{notification.message}</span><span className="block text-[10px] text-slate-400 mt-2">{new Date(notification.date_creation).toLocaleString('fr-FR')}</span></span>
+                      </button>)}</div>
+                    </motion.div>}
+                  </AnimatePresence>
+                </div>
 
                 <div className="relative">
                   <button

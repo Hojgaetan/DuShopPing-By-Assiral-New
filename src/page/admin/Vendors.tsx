@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, CheckCircle, XCircle, ExternalLink, ShieldAlert, Loader2, X, Store, PackageX } from 'lucide-react';
-import { fetchAdminBoutiques, updateBoutiqueStatus, fetchAdminBoutiqueProducts, updateProductStatus } from '../../lib/services';
+import { fetchAdminBoutiques, updateBoutiqueStatus, fetchAdminBoutiqueProducts, updateProductStatus, updateSellerAccountStatus } from '../../lib/services';
 import { Produit } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -25,7 +25,7 @@ export default function AdminVendors() {
     setLoading(false);
   };
 
-  const handleUpdateBoutiqueStatus = async (id: string, status: string) => {
+  const handleUpdateBoutiqueStatus = async (id: string, status: 'EnAttente' | 'Approuvee' | 'Rejetee') => {
     if (!window.confirm(`Voulez-vous vraiment changer le statut de cette boutique à "${status}" ?`)) return;
     try {
       await updateBoutiqueStatus(id, status);
@@ -33,6 +33,18 @@ export default function AdminVendors() {
     } catch (err) {
       console.error(err);
       alert("Erreur lors de la mise à jour de la boutique.");
+    }
+  };
+
+  const handleUpdateAccountStatus = async (sellerId: string, status: 'Actif' | 'Suspendu') => {
+    const label = status === 'Suspendu' ? 'suspendre ce compte vendeur' : 'réactiver ce compte vendeur';
+    if (!window.confirm(`Voulez-vous vraiment ${label} ?`)) return;
+    try {
+      await updateSellerAccountStatus(sellerId, status);
+      await loadBoutiques();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la mise à jour du compte vendeur.");
     }
   };
 
@@ -50,11 +62,11 @@ export default function AdminVendors() {
     }
   };
 
-  const handleUpdateProductStatus = async (id: string, status: string) => {
+  const handleUpdateProductStatus = async (id: string, status: 'Actif' | 'Bloque') => {
     try {
       await updateProductStatus(id, status);
       // Actualiser la liste locale
-      setBoutiqueProducts(prev => prev.map(p => p.id === id ? { ...p, statut: status as any } : p));
+      setBoutiqueProducts(prev => prev.map(p => p.id === id ? { ...p, statut: status } : p));
     } catch (err) {
       console.error(err);
       alert("Erreur lors de la mise à jour du produit.");
@@ -103,11 +115,12 @@ export default function AdminVendors() {
                     <td className="px-6 py-4">
                       <div className="font-bold text-slate-900 text-base">{b.nom}</div>
                       <div className="text-xs text-slate-500">{b.nom_vendeur} ({b.email})</div>
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold ${b.statut_compte === 'Suspendu' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>Compte {b.statut_compte}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
                         b.statut_moderation === 'Approuvee' ? 'bg-emerald-100 text-emerald-700' : 
-                        b.statut_moderation === 'Suspendue' || b.statut_moderation === 'Rejetee' ? 'bg-rose-100 text-rose-700' :
+                        b.statut_moderation === 'Rejetee' ? 'bg-rose-100 text-rose-700' :
                         'bg-amber-100 text-amber-700'
                       }`}>
                         {b.statut_moderation}
@@ -128,11 +141,14 @@ export default function AdminVendors() {
                           </button>
                         )}
                         
-                        {b.statut_moderation !== 'Suspendue' && (
-                          <button onClick={() => handleUpdateBoutiqueStatus(b.id, 'Suspendue')} className="p-2 text-slate-400 hover:text-rose-600 bg-white border border-slate-200 rounded-xl transition-colors shadow-sm" title="Suspendre">
-                            <ShieldAlert className="w-5 h-5" />
+                        {b.statut_moderation !== 'Rejetee' && (
+                          <button onClick={() => handleUpdateBoutiqueStatus(b.id, 'Rejetee')} className="p-2 text-slate-400 hover:text-rose-600 bg-white border border-slate-200 rounded-xl transition-colors shadow-sm" title="Rejeter la boutique">
+                            <XCircle className="w-5 h-5" />
                           </button>
                         )}
+                        <button onClick={() => handleUpdateAccountStatus(b.vendeur_id, b.statut_compte === 'Suspendu' ? 'Actif' : 'Suspendu')} className={`p-2 bg-white border border-slate-200 rounded-xl transition-colors shadow-sm ${b.statut_compte === 'Suspendu' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:text-rose-600'}`} title={b.statut_compte === 'Suspendu' ? 'Réactiver le compte' : 'Suspendre le compte'}>
+                          {b.statut_compte === 'Suspendu' ? <CheckCircle className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
+                        </button>
                       </div>
                     </td>
                   </tr>

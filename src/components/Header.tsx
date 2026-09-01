@@ -9,6 +9,7 @@ import { Search, Bell, Heart, ChevronDown, ShoppingBag, ArrowRight, Store, Shiel
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserBoutique, fetchMegaMenuData, fetchMyNotifications, markNotificationRead, NotificationRecord } from '../lib/services';
+import brandLogo from '../assets/images/logo-Dushopping.jpeg';
 
 interface HeaderProps {
   searchQuery: string;
@@ -194,7 +195,7 @@ export default function Header({
               id="brand-logo"
             >
               <img 
-                src="/src/assets/images/logo-Dushopping.jpeg" 
+                src={brandLogo} 
                 alt="DuShopPing Logo" 
                 className="h-12 sm:h-14 w-auto object-contain" 
               />

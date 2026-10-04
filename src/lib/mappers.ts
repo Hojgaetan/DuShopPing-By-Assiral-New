@@ -32,10 +32,11 @@ export function mapProductRow(product: any): ProduitUI {
 export function resolveProfileRole(
   typeUtilisateur: unknown,
   adminRelation: unknown | unknown[] | null | undefined,
-): 'Acheteur' | 'Vendeur' | 'Admin' {
+): 'Vendeur' | 'Entreprise' | 'Admin' {
   const admin = firstRelation(adminRelation);
   if (admin) return 'Admin';
-  return typeUtilisateur === 'Vendeur' ? 'Vendeur' : 'Acheteur';
+  if (typeUtilisateur === 'Entreprise') return 'Entreprise';
+  return 'Vendeur';
 }
 
 export function isDatabaseUuid(value: string): boolean {

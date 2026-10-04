@@ -19,9 +19,6 @@ export interface Utilisateur {
   statutCompte: StatutCompte;
 }
 
-export interface Acheteur extends Utilisateur {
-  idAppareil?: string;
-}
 
 export interface Vendeur extends Utilisateur {
   pieceIdentiteUrl?: string;

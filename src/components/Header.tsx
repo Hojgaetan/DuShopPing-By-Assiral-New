@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Bell, Heart, ChevronDown, ShoppingBag, ArrowRight, Store, ShieldCheck, Menu, X } from 'lucide-react';
+import { Search, Bell, ChevronDown, ShoppingBag, ArrowRight, Store, ShieldCheck, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserBoutique, fetchMegaMenuData, fetchMyNotifications, markNotificationRead, NotificationRecord } from '../lib/services';
@@ -16,8 +16,6 @@ interface HeaderProps {
   setSearchQuery: (q: string) => void;
   selectedCategory: string;
   setSelectedCategory: (cat: string) => void;
-  favoritesCount: number;
-  openFavorites: () => void;
 }
 
 interface ProductVignette {
@@ -43,9 +41,7 @@ export default function Header({
   searchQuery,
   setSearchQuery,
   selectedCategory,
-  setSelectedCategory,
-  favoritesCount,
-  openFavorites
+  setSelectedCategory
 }: HeaderProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -85,7 +81,7 @@ export default function Header({
 
   useEffect(() => {
     const loadBoutique = () => {
-      if (user && user.role === 'Vendeur') {
+      if (user && (user.role === 'Vendeur' || user.role === 'Entreprise')) {
         fetchUserBoutique(user.id).then(b => {
           if (b && b.logo_url) {
             setBoutiqueLogo(b.logo_url);
@@ -244,13 +240,9 @@ export default function Header({
             {user ? (
               <div className="flex items-center gap-2 sm:gap-4">
                 <span className="hidden lg:block text-sm font-bold text-slate-700">
-                  {user.role === 'Admin' ? 'Administrateur' : user.role === 'Vendeur' ? 'Compte Vendeur' : 'Acheteur'}
+                  {user.role === 'Admin' ? 'Administrateur' : user.role === 'Entreprise' ? 'Compte Entreprise' : 'Compte Vendeur'}
                 </span>
 
-                <button onClick={openFavorites} className="relative p-2 rounded-full text-slate-600 hover:bg-rose-50 hover:text-rose-600" aria-label="Mes favoris">
-                  <Heart className="w-5 h-5" />
-                  {favoritesCount > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">{Math.min(favoritesCount, 99)}</span>}
-                </button>
 
                 <div className="relative">
                   <button onClick={() => { setShowNotifications(value => !value); setShowProfileMenu(false); void loadNotifications(); }} className="relative p-2 rounded-full text-slate-600 hover:bg-slate-100 hover:text-indigo-600" aria-label="Notifications">
@@ -293,7 +285,7 @@ export default function Header({
                           <p className="text-sm font-bold text-slate-800 truncate">{user.nom}</p>
                           <p className="text-xs text-slate-500 truncate">{user.email}</p>
                         </div>
-                        {user.role === 'Vendeur' && (
+                        {(user.role === 'Vendeur' || user.role === 'Entreprise') && (
                           <button
                             onClick={() => {
                               setShowProfileMenu(false);

@@ -4,10 +4,10 @@
  */
 
 import React, { Suspense, useState, FormEvent } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { customerServiceNumber, customerServiceUrl } from './lib/contact';
 import Header from './components/Header';
 import Banner728x90 from './components/Banner728x90';
-import FavoritesDrawer from './components/FavoritesDrawer';
 
 // Pages placed in the requested /page directory
 import Home from './page/Home';
@@ -15,6 +15,7 @@ import Home from './page/Home';
 const ProductDetails = React.lazy(() => import('./page/ProductDetails'));
 const CategoryPage = React.lazy(() => import('./page/CategoryPage'));
 const SellerPage = React.lazy(() => import('./page/SellerPage'));
+const Legal = React.lazy(() => import('./page/Legal'));
 const Login = React.lazy(() => import('./page/Login'));
 const Register = React.lazy(() => import('./page/Register'));
 const ForgotPassword = React.lazy(() => import('./page/ForgotPassword'));
@@ -46,9 +47,8 @@ import { AuthProvider } from './context/AuthContext';
 // Types and Data
 import { ProduitUI } from './types';
 import { Check } from 'lucide-react';
-import { fetchMyFavoriteProductIds, fetchPublicProducts, incrementProductClics, subscribeNewsletter, toggleMyFavorite } from './lib/services';
+import { fetchPublicProducts, incrementProductClics, subscribeNewsletter } from './lib/services';
 import { supabase } from './lib/supabase';
-import { isDatabaseUuid } from './lib/mappers';
 
 export default function App() {
   // Common states shared between routes or accessed through navigation
@@ -56,10 +56,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('Tous');
   
   const [customProducts, setCustomProducts] = useState<ProduitUI[]>([]);
-  const [favorites, setFavorites] = useState<ProduitUI[]>([]);
   const [catalogError, setCatalogError] = useState('');
-  
-  const [showFavorites, setShowFavorites] = useState(false);
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSuccess, setNewsletterSuccess] = useState(false);
@@ -76,8 +73,6 @@ export default function App() {
         if (!isMounted) return;
         setCustomProducts(products);
         setCatalogError('');
-        const favoriteIds = await fetchMyFavoriteProductIds().catch(() => []);
-        if (isMounted) setFavorites(products.filter(product => favoriteIds.includes(product.id)));
       } catch {
         if (isMounted) setCatalogError('Le catalogue est momentanément indisponible. Vérifiez votre connexion puis réessayez.');
       }
@@ -94,27 +89,6 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, []);
-
-  // Toggle favorite actions
-  const handleToggleFavorite = (prodId: string) => {
-    const found = customProducts.find(p => p.id === prodId);
-    if (!found) return;
-
-    setFavorites(prev => {
-      const isAlreadyFav = prev.some(item => item.id === prodId);
-      if (isAlreadyFav) {
-        return prev.filter(item => item.id !== prodId);
-      } else {
-        return [...prev, found];
-      }
-    });
-
-    if (isDatabaseUuid(prodId)) {
-      void toggleMyFavorite(prodId).catch(error => {
-        console.warn('Favori non persisté:', error.message);
-      });
-    }
-  };
 
   // Handle newsletter sign-up safely
   const handleNewsletterSubmit = async (e: FormEvent) => {
@@ -162,8 +136,6 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
-            favoritesCount={favorites.length}
-            openFavorites={() => setShowFavorites(true)}
           />
         </div>
 
@@ -185,8 +157,6 @@ export default function App() {
                   selectedCategory={selectedCategory}
                   setSelectedCategory={setSelectedCategory}
                   customProducts={customProducts}
-                  favorites={favorites}
-                  handleToggleFavorite={handleToggleFavorite}
                   onCallSeller={contactSellerForCall}
                   onChatSeller={contactSellerOnWhatsApp}
                 />
@@ -198,8 +168,6 @@ export default function App() {
               element={
                 <ProductDetails
                   customProducts={customProducts}
-                  favorites={favorites}
-                  handleToggleFavorite={handleToggleFavorite}
                   onCallSeller={contactSellerForCall}
                   onChatSeller={contactSellerOnWhatsApp}
                 />
@@ -211,8 +179,6 @@ export default function App() {
               element={
                 <CategoryPage
                   customProducts={customProducts}
-                  favorites={favorites}
-                  handleToggleFavorite={handleToggleFavorite}
                   onCallSeller={contactSellerForCall}
                   onChatSeller={contactSellerOnWhatsApp}
                 />
@@ -224,14 +190,14 @@ export default function App() {
               element={
                 <SellerPage
                   customProducts={customProducts}
-                  favorites={favorites}
-                  handleToggleFavorite={handleToggleFavorite}
                   onCallSeller={contactSellerForCall}
                   onChatSeller={contactSellerOnWhatsApp}
                 />
               }
             />
 
+            <Route path="/mentions-legales" element={<Legal />} />
+            <Route path="/politique-confidentialite" element={<Legal privacy />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -261,6 +227,8 @@ export default function App() {
               <Route path="payments" element={<AdminPayments />} />
               <Route path="quotas" element={<AdminQuotas />} />
             </Route>
+
+            <Route path="/payments" element={<Navigate to="/admin/payments" replace />} />
           </Routes>
           </Suspense>
         </main>
@@ -301,13 +269,13 @@ export default function App() {
                 </h4>
                 <ul className="space-y-2.5 text-xs sm:text-sm text-slate-400">
                   <li>
-                    <a href="/#terms" onClick={(e) => { e.preventDefault(); alert("Conditions d'utilisation en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Conditions d'utilisation</a>
+                    <Link to="/mentions-legales" className="hover:text-emerald-450 transition-colors font-sans">Mentions légales</Link>
                   </li>
                   <li>
-                    <a href="/#privacy" onClick={(e) => { e.preventDefault(); alert("Politique de confidentialité en cours de rédaction"); }} className="hover:text-emerald-450 transition-colors font-sans">Politique de confidentialité</a>
+                    <Link to="/politique-confidentialite" className="hover:text-emerald-450 transition-colors font-sans">Politique de confidentialité</Link>
                   </li>
                   <li>
-                    <a href="mailto:support@dushop.com" className="hover:text-emerald-450 transition-colors font-sans">Support Client</a>
+                    {customerServiceUrl ? <a href={customerServiceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-450 transition-colors font-sans">Service client WhatsApp : +{customerServiceNumber}</a> : <span>Service client — numéro à compléter</span>}
                   </li>
                 </ul>
               </div>
@@ -370,17 +338,6 @@ export default function App() {
           </div>
         </footer>
 
-        {/* 5. Drawers & Popup Modals */}
-        
-        {/* Favorites slide-over page */}
-        <FavoritesDrawer
-          isOpen={showFavorites}
-          onClose={() => setShowFavorites(false)}
-          favorites={favorites}
-          onRemove={(id) => setFavorites(prev => prev.filter(f => f.id !== id))}
-          onCallSeller={contactSellerForCall}
-          onChatSeller={contactSellerOnWhatsApp}
-        />
 
       </div>
     </Router>

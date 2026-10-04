@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { checkPublishingQuota, createProduct, fetchCategories } from '../../lib/services';
 import { Categorie } from '../../types';
 import { uploadToCloudinary } from '../../lib/cloudinary';
+import { getErrorMessage } from '../../lib/errors';
 import { isPublishingQuotaExceeded } from '../../lib/mappers';
 
 export default function PublishProduct() {
@@ -110,6 +111,10 @@ export default function PublishProduct() {
     e.preventDefault();
     if (isQuotaExceeded || !user?.boutiqueId) return;
 
+    const title = formData.titre.trim();
+    const description = formData.description.trim();
+    if (title.length < 3) { setPublishError('Le titre doit contenir au moins 3 caractères.'); return; }
+    if (description.length < 10) { setPublishError('La description doit contenir au moins 10 caractères.'); return; }
     const images = formData.images.filter(Boolean);
     const normalizedPhone = formData.telephone_contact.replace(/\D/g, '');
     if (images.length < 1) {
@@ -120,7 +125,7 @@ export default function PublishProduct() {
       setPublishError('Sélectionnez une catégorie.');
       return;
     }
-    if (Number(formData.prix) <= 0) {
+    if (!Number.isFinite(Number(formData.prix)) || Number(formData.prix) <= 0) {
       setPublishError('Le prix doit être supérieur à zéro.');
       return;
     }
@@ -134,6 +139,8 @@ export default function PublishProduct() {
     try {
       await createProduct(user.boutiqueId, {
         ...formData,
+        titre: title,
+        description,
         prix: parseFloat(formData.prix)
       });
       window.dispatchEvent(new Event('product_published'));
@@ -141,7 +148,7 @@ export default function PublishProduct() {
       navigate('/dashboard/products', { replace: true });
     } catch (err) {
       console.error(err);
-      setPublishError(err instanceof Error ? err.message : "La publication a échoué. Vérifiez les informations saisies.");
+      setPublishError(getErrorMessage(err, "La publication a échoué. Vérifiez les informations saisies."));
     } finally {
       setPublishing(false);
     }

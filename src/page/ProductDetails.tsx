@@ -6,23 +6,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Phone, MessageSquare, Heart, MapPin, ArrowLeft, Shield, Sparkles, AlertCircle, ChevronLeft, ChevronRight, Store } from 'lucide-react';
+import { Phone, MessageSquare, MapPin, ArrowLeft, Shield, Sparkles, AlertCircle, ChevronLeft, ChevronRight, Store } from 'lucide-react';
 import { ProduitUI } from '../types';
 import ProductCard from '../components/ProductCard';
 import { fetchProductById, incrementProductClics, incrementProductViews } from '../lib/services';
 
 interface ProductDetailsProps {
   customProducts: ProduitUI[];
-  favorites: ProduitUI[];
-  handleToggleFavorite: (id: string) => void;
   onCallSeller: (product: ProduitUI) => void;
   onChatSeller: (product: ProduitUI) => void;
 }
 
 export default function ProductDetails({
   customProducts,
-  favorites,
-  handleToggleFavorite,
   onCallSeller,
   onChatSeller
 }: ProductDetailsProps) {
@@ -103,7 +99,6 @@ export default function ProductDetails({
     );
   }
 
-  const isFav = favorites.some(f => f.id === product.id);
   const galleryImages = (product.images || []).filter(Boolean);
   const selectedImage = galleryImages[selectedImageIndex] || galleryImages[0];
 
@@ -177,17 +172,6 @@ export default function ProductDetails({
               )}
             </div>
 
-            <button
-              onClick={() => handleToggleFavorite(product.id)}
-              className={`absolute top-4 right-4 p-3 rounded-full shadow-md transition-all cursor-pointer ${
-                isFav
-                  ? 'bg-rose-500 text-white hover:bg-rose-600'
-                  : 'bg-white/90 backdrop-blur-xs text-slate-500 hover:text-rose-500 hover:bg-white'
-              }`}
-              title={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-            >
-              <Heart className={`w-5 h-5 ${isFav ? 'fill-current' : ''}`} />
-            </button>
           </div>
 
           {galleryImages.length > 1 && (
@@ -310,8 +294,6 @@ export default function ProductDetails({
                 key={prod.id}
                 product={prod}
                 variant="minimal"
-                isFavorite={favorites.some(f => f.id === prod.id)}
-                onToggleFavorite={handleToggleFavorite}
                 onCallSeller={onCallSeller}
                 onChatSeller={onChatSeller}
               />

@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, MessageSquare, Star, BadgeCheck, Heart, MapPin, Image as ImageIcon } from 'lucide-react';
+import { Phone, MessageSquare, Star, BadgeCheck, MapPin, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ProduitUI } from '../types';
 
@@ -13,8 +13,6 @@ interface ProductCardProps {
   key?: any;
   product: ProduitUI;
   variant: 'detailed' | 'minimal';
-  isFavorite: boolean;
-  onToggleFavorite: (id: string) => void;
   onCallSeller: (product: ProduitUI) => void;
   onChatSeller: (product: ProduitUI) => void;
 }
@@ -22,8 +20,6 @@ interface ProductCardProps {
 export default function ProductCard({
   product,
   variant,
-  isFavorite,
-  onToggleFavorite,
   onCallSeller,
   onChatSeller
 }: ProductCardProps) {
@@ -46,19 +42,6 @@ export default function ProductCard({
         className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col h-full relative cursor-pointer"
         id={`product-card-${product.id}`}
       >
-        {/* Favorite Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(product.id);
-          }}
-          className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-xs p-2 rounded-full hover:bg-white text-slate-500 hover:text-rose-500 shadow-xs transition-colors cursor-pointer"
-          title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-          aria-label="Ajouter aux favoris"
-        >
-          <Heart className={`w-4 h-4 transition-all ${isFavorite ? 'fill-rose-500 text-rose-500 scale-110' : ''}`} />
-        </button>
-
         {/* Sponsor Tag */}
         {product.isSponsorised && (
           <div className="absolute top-3 left-3 z-10">
@@ -172,17 +155,6 @@ export default function ProductCard({
         className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col h-full relative cursor-pointer"
         id={`product-card-pop-${product.id}`}
       >
-        {/* Favorite Trigger */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(product.id);
-          }}
-          className="absolute top-2 right-2 z-10 bg-white/90 backdrop-blur-xs p-1.5 rounded-full hover:bg-white text-slate-500 hover:text-rose-500 shadow-xs transition-colors cursor-pointer"
-          title="Préférences"
-        >
-          <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-rose-500 text-rose-500' : ''}`} />
-        </button>
 
         {/* Large backplane pricing as watermark effect if requested, or clean product aspect ratio */}
         <div className="aspect-[4/3] bg-slate-50 overflow-hidden relative group">

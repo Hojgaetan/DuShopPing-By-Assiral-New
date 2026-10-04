@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, user } = useAuth();
+  const { login, signOut } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,10 +25,12 @@ export default function Login() {
         // Redirection selon le rôle récupéré depuis Supabase Auth
         if (result.role === 'Admin') {
           navigate('/admin');
-        } else if (result.role === 'Vendeur') {
+        } else if ((result.role === 'Vendeur' || result.role === 'Entreprise')) {
           navigate('/dashboard');
         } else {
-          navigate('/');
+          await signOut();
+          setError('Les comptes acheteurs ne sont plus pris en charge. Contactez directement les vendeurs depuis la marketplace.');
+          setIsLoading(false);
         }
       } else {
         setError(result.error || 'Email ou mot de passe incorrect.');

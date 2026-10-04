@@ -47,9 +47,15 @@ describe('resolveProfileRole', () => {
     expect(resolveProfileRole('Acheteur', { role: 'SuperAdmin' })).toBe('Admin');
   });
 
-  it('refuse de promouvoir une valeur de rôle inconnue', () => {
-    expect(resolveProfileRole('Admin', null)).toBe('Acheteur');
+  it('distingue une entreprise sans permettre une élévation admin', () => {
+    expect(resolveProfileRole('Entreprise', null)).toBe('Entreprise');
+    expect(resolveProfileRole('Entreprise', [{ role: 'SuperAdmin' }])).toBe('Admin');
+  });
+
+  it('normalise les profils non-admin en vendeur', () => {
+    expect(resolveProfileRole('Admin', null)).toBe('Vendeur');
     expect(resolveProfileRole('Vendeur', null)).toBe('Vendeur');
+    expect(resolveProfileRole('Acheteur', null)).toBe('Vendeur');
   });
 });
 

@@ -15,12 +15,12 @@ export default function DashboardLayout() {
     );
   }
 
-  if (!user || user.role !== 'Vendeur') {
+  if (!user || !['Vendeur', 'Entreprise'].includes(user.role)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <h2 className="text-xl font-bold text-slate-800">Accès refusé</h2>
-          <p className="text-slate-500 mt-2">Vous devez être connecté en tant que Vendeur.</p>
+          <p className="text-slate-500 mt-2">Vous devez être connecté avec un profil vendeur ou entreprise.</p>
           <button onClick={() => navigate('/')} className="mt-4 text-[#02603c] font-bold underline">
             Retour à l'accueil
           </button>
@@ -49,7 +49,7 @@ export default function DashboardLayout() {
             </div>
             <div>
               <h3 className="font-extrabold text-slate-900 truncate">{user.nom}</h3>
-              <p className="text-xs text-slate-500">Espace Vendeur</p>
+              <p className="text-xs text-slate-500">{user.role === 'Entreprise' ? 'Espace Entreprise' : 'Espace Vendeur'}</p>
             </div>
           </div>
 

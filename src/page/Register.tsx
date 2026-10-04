@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { ShoppingBag, Mail, Lock, User, Phone, Store, ArrowRight, ShieldCheck, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
-  const [activeTab, setActiveTab] = useState<'acheteur' | 'vendeur'>('acheteur');
-  
+
   const [formData, setFormData] = useState({
     nom: '',
     email: '',
@@ -18,6 +17,7 @@ export default function Register() {
     localisation: ''
   });
   
+  const [accountType, setAccountType] = useState<'Vendeur' | 'Entreprise'>('Vendeur');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,13 +31,10 @@ export default function Register() {
     setIsLoading(true);
     setError('');
 
-    // Validation Vendeur
-    if (activeTab === 'vendeur') {
-      if (!formData.nomBoutique.trim()) {
-        setError('Le nom de la boutique est obligatoire pour un vendeur.');
-        setIsLoading(false);
-        return;
-      }
+    if (!formData.nomBoutique.trim()) {
+      setError('Le nom de la boutique est obligatoire pour un vendeur.');
+      setIsLoading(false);
+      return;
     }
 
     try {
@@ -46,16 +43,16 @@ export default function Register() {
         email: formData.email,
         telephone: formData.telephone,
         password: formData.password,
-        isVendeur: activeTab === 'vendeur',
-        nomBoutique: activeTab === 'vendeur' ? formData.nomBoutique : undefined,
-        localisation: activeTab === 'vendeur' ? formData.localisation : undefined,
+        accountType,
+        nomBoutique: formData.nomBoutique,
+        localisation: formData.localisation,
       });
 
       if (result.success) {
         if (result.requiresEmailConfirmation) {
           navigate('/login', { state: { message: 'Compte créé. Consultez votre e-mail pour confirmer votre inscription avant de vous connecter.' } });
         } else {
-          navigate(activeTab === 'vendeur' ? '/dashboard' : '/');
+          navigate('/dashboard');
         }
       } else {
         setError(result.error || "Erreur lors de l'inscription");
@@ -94,36 +91,8 @@ export default function Register() {
             Rejoignez DuShopPing
           </h2>
           <p className="mt-2 text-sm text-slate-500">
-            Choisissez votre type de compte pour commencer
+            Ouvrez votre compte vendeur ou entreprise pour publier vos articles
           </p>
-        </div>
-
-        {/* Tabs for Acheteur / Vendeur */}
-        <div className="flex p-1 bg-slate-100 rounded-2xl mt-6 relative z-20">
-          <button
-            type="button"
-            onClick={() => { setActiveTab('acheteur'); setError(''); }}
-            className={`flex-1 py-3 text-sm font-extrabold rounded-xl flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'acheteur' 
-                ? 'bg-white text-brand shadow-sm border border-slate-200/50' 
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Je veux acheter
-          </button>
-          <button
-            type="button"
-            onClick={() => { setActiveTab('vendeur'); setError(''); }}
-            className={`flex-1 py-3 text-sm font-extrabold rounded-xl flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'vendeur' 
-                ? 'bg-brand text-white shadow-md' 
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Store className="w-4 h-4" />
-            Je veux vendre
-          </button>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -138,11 +107,12 @@ export default function Register() {
             </motion.div>
           )}
 
+          <div><label htmlFor="accountType" className="block text-sm font-bold text-slate-700 mb-2">Type de profil</label><select id="accountType" value={accountType} onChange={e => setAccountType(e.target.value as 'Vendeur' | 'Entreprise')} className="w-full border border-slate-200 rounded-xl p-3"><option value="Vendeur">Vendeur individuel</option><option value="Entreprise">Entreprise</option></select>{accountType === 'Entreprise' && <p className="text-sm text-slate-500 mt-2">Après connexion, transmettez la CNI du représentant et le RCC de l’entreprise dans votre profil. La boutique reste en attente jusqu’à validation du dossier.</p>}</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Nom Complet */}
             <div className="md:col-span-2">
               <label htmlFor="nom" className="block text-sm font-bold text-slate-700 mb-1.5">
-                {activeTab === 'vendeur' ? 'Nom du gérant' : 'Nom complet ou Pseudo'}
+                Nom du gérant
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -197,7 +167,7 @@ export default function Register() {
                   id="telephone"
                   name="telephone"
                   type="tel"
-                  required={activeTab === 'vendeur'}
+                  required
                   value={formData.telephone}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:text-sm bg-slate-50/50 focus:bg-white"
@@ -229,65 +199,55 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Specific Vendeur Fields */}
-            <AnimatePresence>
-              {activeTab === 'vendeur' && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 overflow-hidden"
-                >
-                  <div className="md:col-span-2">
-                    <div className="h-px w-full bg-emerald-100 my-2"></div>
-                    <h3 className="text-emerald-800 font-extrabold text-sm mb-4 flex items-center gap-2">
-                      <Store className="w-4 h-4" /> Informations de la Boutique
-                    </h3>
-                  </div>
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+              <div className="md:col-span-2">
+                <div className="h-px w-full bg-emerald-100 my-2"></div>
+                <h3 className="text-emerald-800 font-extrabold text-sm mb-4 flex items-center gap-2">
+                  <Store className="w-4 h-4" /> Informations de la Boutique
+                </h3>
+              </div>
 
-                  <div className="md:col-span-1">
-                    <label htmlFor="nomBoutique" className="block text-sm font-bold text-slate-700 mb-1.5">
-                      Nom de la boutique
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Store className="h-5 w-5 text-slate-400" />
-                      </div>
-                      <input
-                        id="nomBoutique"
-                        name="nomBoutique"
-                        type="text"
-                        required={activeTab === 'vendeur'}
-                        value={formData.nomBoutique}
-                        onChange={handleChange}
-                        className="appearance-none block w-full pl-10 pr-3 py-3 border border-emerald-200 rounded-xl text-slate-900 placeholder-emerald-300 focus:outline-hidden focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:text-sm bg-emerald-50/30 focus:bg-white"
-                        placeholder="Ex: Les Merveilles d'Amara"
-                      />
-                    </div>
+              <div className="md:col-span-1">
+                <label htmlFor="nomBoutique" className="block text-sm font-bold text-slate-700 mb-1.5">
+                  {accountType === 'Entreprise' ? 'Nom de l’entreprise / boutique' : 'Nom de la boutique'}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Store className="h-5 w-5 text-slate-400" />
                   </div>
+                  <input
+                    id="nomBoutique"
+                    name="nomBoutique"
+                    type="text"
+                    required
+                    value={formData.nomBoutique}
+                    onChange={handleChange}
+                    className="appearance-none block w-full pl-10 pr-3 py-3 border border-emerald-200 rounded-xl text-slate-900 placeholder-emerald-300 focus:outline-hidden focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:text-sm bg-emerald-50/30 focus:bg-white"
+                    placeholder="Ex: Les Merveilles d'Amara"
+                  />
+                </div>
+              </div>
 
-                  <div className="md:col-span-1">
-                    <label htmlFor="localisation" className="block text-sm font-bold text-slate-700 mb-1.5">
-                      Localisation (Ville/Quartier)
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <MapPin className="h-5 w-5 text-slate-400" />
-                      </div>
-                      <input
-                        id="localisation"
-                        name="localisation"
-                        type="text"
-                        value={formData.localisation}
-                        onChange={handleChange}
-                        className="appearance-none block w-full pl-10 pr-3 py-3 border border-emerald-200 rounded-xl text-slate-900 placeholder-emerald-300 focus:outline-hidden focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:text-sm bg-emerald-50/30 focus:bg-white"
-                        placeholder="Ex: Douala, Akwa"
-                      />
-                    </div>
+              <div className="md:col-span-1">
+                <label htmlFor="localisation" className="block text-sm font-bold text-slate-700 mb-1.5">
+                  Localisation (Ville/Quartier)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin className="h-5 w-5 text-slate-400" />
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <input
+                    id="localisation"
+                    name="localisation"
+                    type="text"
+                    value={formData.localisation}
+                    onChange={handleChange}
+                    className="appearance-none block w-full pl-10 pr-3 py-3 border border-emerald-200 rounded-xl text-slate-900 placeholder-emerald-300 focus:outline-hidden focus:ring-2 focus:ring-brand focus:border-transparent transition-all sm:text-sm bg-emerald-50/30 focus:bg-white"
+                    placeholder="Ex: Douala, Akwa"
+                  />
+                </div>
+              </div>
+            </div>
 
           </div>
 
@@ -304,7 +264,7 @@ export default function Register() {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-extrabold rounded-xl text-white bg-brand hover:bg-brand-hover focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-brand transition-all shadow-lg shadow-emerald-500/30 overflow-hidden"
             >
-              {isLoading ? 'Création en cours...' : (activeTab === 'vendeur' ? 'Ouvrir ma boutique' : 'Créer mon compte')}
+              {isLoading ? 'Création en cours...' : 'Ouvrir ma boutique'}
               {!isLoading && <ArrowRight className="ml-2 w-5 h-5 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all absolute right-4" />}
             </motion.button>
           </div>

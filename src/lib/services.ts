@@ -207,7 +207,7 @@ export async function createProduct(boutiqueId: string, productData: any) {
     .single();
 
   if (error) {
-    console.error('Erreur lors de la création du produit:', error);
+    console.error('Erreur lors de la création du produit:', JSON.stringify({ code: error.code, message: error.message, details: error.details, hint: error.hint }));
     throw error;
   }
 
@@ -569,7 +569,7 @@ export async function fetchAdminDashboardOverview(): Promise<AdminDashboardOverv
 export type VerificationStatus = 'EnAttente' | 'Approuve' | 'Rejete';
 export interface SellerVerificationRecord {
   vendeur_id: string; type_document: 'CNI' | 'Passeport' | 'Permis';
-  document_recto_path: string; document_verso_path: string | null;
+  document_recto_path: string; document_verso_path: string | null; document_rcc_path?: string | null;
   statut: VerificationStatus; motif_decision: string | null; soumis_le: string;
   examine_le: string | null;
 }
@@ -580,7 +580,7 @@ export async function fetchMySellerVerification(): Promise<SellerVerificationRec
   return data as SellerVerificationRecord | null;
 }
 
-export async function submitSellerVerification(type: SellerVerificationRecord['type_document'], recto: File, verso?: File | null) {
+export async function submitSellerVerification(type: SellerVerificationRecord['type_document'], recto: File, verso?: File | null, rcc?: File | null) {
   const { data: authData } = await supabase.auth.getUser();
   const userId = authData.user?.id;
   if (!userId) throw new Error('Session expirée.');
@@ -593,22 +593,27 @@ export async function submitSellerVerification(type: SellerVerificationRecord['t
     if (error) throw error;
     return path;
   };
+  for (const file of [recto, verso, rcc]) {
+    if (file && (file.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type))) throw new Error('Utilisez un JPG, PNG, WEBP ou PDF de 5 Mo maximum.');
+  }
   const rectoPath = await upload(recto, 'recto');
   const versoPath = verso ? await upload(verso, 'verso') : null;
-  const { error } = await supabase.rpc('submit_seller_verification', { document_type: type, recto_path: rectoPath, verso_path: versoPath });
+  const rccPath = rcc ? await upload(rcc, 'rcc') : null;
+  const { error } = await supabase.rpc('submit_seller_verification', { document_type: type, recto_path: rectoPath, verso_path: versoPath, rcc_path: rccPath });
   if (error) throw error;
 }
 
 export interface AdminVerificationRecord extends SellerVerificationRecord {
-  vendeur_nom: string; vendeur_email: string; boutique_nom: string;
+  vendeur_nom: string; vendeur_email: string; boutique_nom: string; type_profil?: string;
 }
 
 export async function fetchAdminSellerVerifications(): Promise<AdminVerificationRecord[]> {
   const { data, error } = await supabase.from('dossiers_verification_vendeurs')
-    .select('*, vendeurs(utilisateurs(nom, email), boutiques(nom))').order('soumis_le', { ascending: false });
+    .select('*, vendeurs(utilisateurs(nom, email, type_utilisateur), boutiques(nom))').order('soumis_le', { ascending: false });
   if (error) throw error;
   return (data || []).map((item: any) => ({
     ...item,
+    type_profil: item.vendeurs?.utilisateurs?.type_utilisateur || 'Vendeur',
     vendeur_nom: item.vendeurs?.utilisateurs?.nom || 'Vendeur inconnu',
     vendeur_email: item.vendeurs?.utilisateurs?.email || '',
     boutique_nom: item.vendeurs?.boutiques?.[0]?.nom || item.vendeurs?.boutiques?.nom || 'Boutique inconnue',

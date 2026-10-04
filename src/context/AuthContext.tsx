@@ -9,7 +9,7 @@ export interface UserProfile {
   nom: string;
   email: string;
   telephone?: string;
-  role: 'Acheteur' | 'Vendeur' | 'Admin';
+  role: 'Vendeur' | 'Entreprise' | 'Admin';
   adminRole?: 'SuperAdmin' | 'Moderateur' | 'Commercial';
   accountStatus: string;
   boutiqueId?: string | null;
@@ -21,14 +21,14 @@ interface AuthContextType {
   supabaseUser: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserProfile['role'] }>;
-  signUp: (email: string, password: string, data: { nom: string; telephone?: string; role: 'Acheteur' | 'Vendeur' }) => Promise<{ success: boolean; error?: string; requiresEmailConfirmation?: boolean }>;
+  signUp: (email: string, password: string, data: { nom: string; telephone?: string; role: 'Vendeur' | 'Entreprise' }) => Promise<{ success: boolean; error?: string; requiresEmailConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
   updatePassword: (password: string) => Promise<{ success: boolean; error?: string }>;
   updateUser: (data: Partial<UserProfile>) => Promise<void>;
   // Legacy methods (mapping to new ones or kept for compatibility during migration)
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; role?: UserProfile['role'] }>;
-  register: (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean }) => Promise<{ success: boolean; error?: string; role?: string; requiresEmailConfirmation?: boolean }>;
+  register: (data: { nom: string; email: string; telephone?: string; password: string; accountType?: 'Vendeur' | 'Entreprise'; nomBoutique?: string; localisation?: string }) => Promise<{ success: boolean; error?: string; role?: string; requiresEmailConfirmation?: boolean }>;
   logout: () => Promise<void>;
 }
 
@@ -154,7 +154,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signUp = async (
     email: string, 
     password: string, 
-    data: { nom: string; telephone?: string; role: 'Acheteur' | 'Vendeur'; nom_boutique?: string; localisation?: string }
+    data: { nom: string; telephone?: string; role: 'Vendeur' | 'Entreprise'; nom_boutique?: string; localisation?: string }
   ): Promise<{ success: boolean; error?: string; requiresEmailConfirmation?: boolean }> => {
     try {
       const { data: authData, error } = await supabase.auth.signUp({
@@ -197,15 +197,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Legacy mappings
   const login = signIn;
-  const register = async (data: { nom: string; email: string; telephone?: string; password: string; isVendeur: boolean; nomBoutique?: string; localisation?: string }): Promise<{ success: boolean; error?: string; role?: string; requiresEmailConfirmation?: boolean }> => {
+  const register = async (data: { nom: string; email: string; telephone?: string; password: string; accountType?: 'Vendeur' | 'Entreprise'; nomBoutique?: string; localisation?: string }): Promise<{ success: boolean; error?: string; role?: string; requiresEmailConfirmation?: boolean }> => {
     const result = await signUp(data.email, data.password, {
       nom: data.nom,
       telephone: data.telephone,
-      role: data.isVendeur ? 'Vendeur' : 'Acheteur',
+      role: data.accountType || 'Vendeur',
       nom_boutique: data.nomBoutique,
       localisation: data.localisation
     });
-    return { ...result, role: data.isVendeur ? 'Vendeur' : 'Acheteur' };
+    return { ...result, role: data.accountType || 'Vendeur' };
   };
   const logout = signOut;
 

@@ -13,16 +13,12 @@ import { fetchPublicStorefront, incrementBoutiqueVues, PublicStorefront } from '
 
 interface SellerPageProps {
   customProducts: ProduitUI[];
-  favorites: ProduitUI[];
-  handleToggleFavorite: (id: string) => void;
   onCallSeller: (product: ProduitUI) => void;
   onChatSeller: (product: ProduitUI) => void;
 }
 
 export default function SellerPage({
   customProducts,
-  favorites,
-  handleToggleFavorite,
   onCallSeller,
   onChatSeller
 }: SellerPageProps) {
@@ -152,8 +148,6 @@ export default function SellerPage({
                 key={product.id}
                 product={product}
                 variant={product.isSponsorised ? 'detailed' : 'minimal'}
-                isFavorite={favorites.some(f => f.id === product.id)}
-                onToggleFavorite={handleToggleFavorite}
                 onCallSeller={onCallSeller}
                 onChatSeller={onChatSeller}
               />

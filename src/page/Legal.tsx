@@ -1,0 +1,24 @@
+import { Link } from 'react-router-dom';
+import { customerServiceNumber, customerServiceUrl } from '../lib/contact';
+
+export default function Legal({ privacy = false }: { privacy?: boolean }) {
+  return <article className="max-w-3xl mx-auto bg-white border border-slate-100 rounded-3xl p-6 sm:p-10 space-y-6 text-slate-600 leading-relaxed">
+    <Link to="/" className="text-brand font-bold">Retour à l’accueil</Link>
+    <h1 className="text-3xl font-extrabold text-slate-900">{privacy ? 'Politique de confidentialité' : 'Mentions légales'}</h1>
+    <p className="text-sm bg-amber-50 border border-amber-100 rounded-xl p-4">Version à compléter : les informations de l’exploitant et les modalités de conservation doivent être renseignées avant publication définitive.</p>
+    {privacy ? <>
+      <section><h2 className="text-xl font-bold text-slate-900 mb-2">Responsable du traitement</h2><p>Nom légal, adresse et e-mail : À compléter par l’exploitant de DuShopPing.</p></section>
+      <section><h2 className="text-xl font-bold text-slate-900 mb-2">Données et utilisation</h2><p>La création d’un compte collecte votre nom, votre e-mail, votre téléphone et les informations de votre boutique. Ces données servent à gérer l’accès au compte, les annonces et les échanges avec l’administration. Les informations de contact publiées avec les annonces sont visibles par les visiteurs.</p><p className="mt-2">La vérification collecte une pièce d’identité et, pour une entreprise, son RCC. Ces pièces sont stockées dans un espace privé et consultables par le titulaire du compte et les administrateurs habilités. Les demandes de Boost enregistrent la formule, l’article, le montant, la référence et, si fourni, le numéro du payeur. La newsletter enregistre votre e-mail. Les statistiques enregistrent les vues et les clics de contact.</p></section>
+      <section><h2 className="text-xl font-bold text-slate-900 mb-2">Services utilisés</h2><p>Supabase assure l’authentification, le stockage des données et des documents privés. Cloudinary héberge les images publiques des boutiques et des articles. Les liens WhatsApp ouvrent un service externe ; les messages et preuves de paiement que vous y envoyez sont traités sur ce service. L’hébergement du site et les lieux de traitement sont à compléter.</p></section>
+      <section><h2 className="text-xl font-bold text-slate-900 mb-2">Session et stockage local</h2><p>Le navigateur conserve les informations nécessaires à votre session. Les modalités des éventuels autres traceurs sont à compléter par l’exploitant.</p></section>
+      <section><h2 className="text-xl font-bold text-slate-900 mb-2">Conservation et demandes</h2><p>Durées de conservation, fondements des traitements, destinataires supplémentaires et modalités de suppression : À compléter. Pour demander l’accès, la correction ou la suppression de vos données, contactez le service client. La désinscription à la newsletter peut également être demandée auprès de ce service.</p></section>
+    </> : <>
+      <section><h2 className="text-xl font-bold text-slate-900 mb-2">Éditeur du site</h2><dl className="space-y-2"><div><dt className="font-bold">Nom commercial</dt><dd>DuShopPing</dd></div>{['Nom légal / raison sociale', 'Forme juridique', 'Adresse du siège', 'Numéro RCC', 'Identifiant fiscal', 'E-mail de contact', 'Responsable de publication'].map(label => <div key={label}><dt className="font-bold">{label}</dt><dd>À compléter</dd></div>)}</dl></section>
+      <section><h2 className="text-xl font-bold text-slate-900 mb-2">Hébergement</h2><p>Nom de l’hébergeur du site, adresse et contact : À compléter.</p></section>
+      <section><h2 className="text-xl font-bold text-slate-900 mb-2">Fonctionnement de la plateforme</h2><p>DuShopPing présente les annonces de vendeurs et d’entreprises. Les visiteurs peuvent consulter le catalogue et contacter directement les vendeurs. Les informations des annonces sont fournies par leurs auteurs. Les formules Boost sont activées après examen du paiement par l’administration.</p></section>
+      <section><h2 className="text-xl font-bold text-slate-900 mb-2">Contenus et signalements</h2><p>Pour signaler une annonce, un contenu ou un problème de compte, contactez le service client en précisant l’article ou la boutique concernée. Les conditions d’utilisation détaillées et les règles applicables aux contenus sont à compléter par l’exploitant.</p></section>
+      <Link to="/politique-confidentialite" className="text-brand font-bold block">Consulter la politique de confidentialité</Link>
+    </>}
+    <section><h2 className="text-xl font-bold text-slate-900 mb-2">Service client</h2>{customerServiceUrl ? <a href={customerServiceUrl} target="_blank" rel="noopener noreferrer" className="text-brand font-bold">WhatsApp : +{customerServiceNumber}</a> : <p>Numéro WhatsApp du service client : À compléter.</p>}</section>
+  </article>;
+}

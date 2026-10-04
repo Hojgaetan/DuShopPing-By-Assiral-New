@@ -11,16 +11,12 @@ import ProductCard from '../components/ProductCard';
 
 interface CategoryPageProps {
   customProducts: ProduitUI[];
-  favorites: ProduitUI[];
-  handleToggleFavorite: (id: string) => void;
   onCallSeller: (product: ProduitUI) => void;
   onChatSeller: (product: ProduitUI) => void;
 }
 
 export default function CategoryPage({
   customProducts,
-  favorites,
-  handleToggleFavorite,
   onCallSeller,
   onChatSeller
 }: CategoryPageProps) {
@@ -91,8 +87,6 @@ export default function CategoryPage({
                 key={product.id}
                 product={product}
                 variant={product.isSponsorised ? 'detailed' : 'minimal'}
-                isFavorite={favorites.some(f => f.id === product.id)}
-                onToggleFavorite={handleToggleFavorite}
                 onCallSeller={onCallSeller}
                 onChatSeller={onChatSeller}
               />

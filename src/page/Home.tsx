@@ -16,8 +16,6 @@ interface HomeProps {
   selectedCategory: string;
   setSelectedCategory: (val: string) => void;
   customProducts: ProduitUI[];
-  favorites: ProduitUI[];
-  handleToggleFavorite: (id: string) => void;
   onCallSeller: (product: ProduitUI) => void;
   onChatSeller: (product: ProduitUI) => void;
 }
@@ -28,8 +26,6 @@ export default function Home({
   selectedCategory,
   setSelectedCategory,
   customProducts,
-  favorites,
-  handleToggleFavorite,
   onCallSeller,
   onChatSeller
 }: HomeProps) {
@@ -178,8 +174,6 @@ export default function Home({
                       key={product.id}
                       product={product}
                       variant={product.isSponsorised ? 'detailed' : 'minimal'}
-                      isFavorite={favorites.some(f => f.id === product.id)}
-                      onToggleFavorite={handleToggleFavorite}
                       onCallSeller={onCallSeller}
                       onChatSeller={onChatSeller}
                     />
@@ -228,8 +222,6 @@ export default function Home({
                         key={product.id}
                         product={product}
                         variant="detailed"
-                        isFavorite={favorites.some(f => f.id === product.id)}
-                        onToggleFavorite={handleToggleFavorite}
                         onCallSeller={onCallSeller}
                         onChatSeller={onChatSeller}
                       />
@@ -279,8 +271,6 @@ export default function Home({
                       key={product.id}
                       product={product}
                       variant="minimal"
-                      isFavorite={favorites.some(f => f.id === product.id)}
-                      onToggleFavorite={handleToggleFavorite}
                       onCallSeller={onCallSeller}
                       onChatSeller={onChatSeller}
                     />
@@ -305,8 +295,6 @@ export default function Home({
                       key={product.id}
                       product={product}
                       variant="detailed"
-                      isFavorite={favorites.some(f => f.id === product.id)}
-                      onToggleFavorite={handleToggleFavorite}
                       onCallSeller={onCallSeller}
                       onChatSeller={onChatSeller}
                     />
@@ -355,8 +343,6 @@ export default function Home({
                       key={product.id}
                       product={product}
                       variant="minimal"
-                      isFavorite={favorites.some(f => f.id === product.id)}
-                      onToggleFavorite={handleToggleFavorite}
                       onCallSeller={onCallSeller}
                       onChatSeller={onChatSeller}
                     />
@@ -381,8 +367,6 @@ export default function Home({
                       key={product.id}
                       product={product}
                       variant="detailed"
-                      isFavorite={favorites.some(f => f.id === product.id)}
-                      onToggleFavorite={handleToggleFavorite}
                       onCallSeller={onCallSeller}
                       onChatSeller={onChatSeller}
                     />

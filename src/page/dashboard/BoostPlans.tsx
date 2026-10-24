@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Zap, Crown, Gem, Check, Phone, ArrowRight, CheckCircle2, X, Sparkles, Loader2, AlertCircle, Clock3, History } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { customerServiceNumber, orangeMerchantCode, momoMerchantCode, companyName } from '../../lib/contact';
 import { fetchBoutiqueProducts, fetchMyBoostRequests, fetchSponsoringPlans, SellerBoostRequest, SellerProductSummary, subscribeToBoost } from '../../lib/services';
 
 interface BoostPlan {
@@ -291,7 +292,7 @@ export default function BoostPlans() {
     e.preventDefault();
     if (!user?.boutiqueId || !selectedProductId || !selectedPlan) return;
 
-    const adminWhatsApp = (import.meta.env.VITE_ADMIN_WHATSAPP_NUMBER || '').replace(/\D/g, '');
+    const adminWhatsApp = customerServiceNumber;
     if (!adminWhatsApp) {
       setPaymentError("Le numéro WhatsApp de l'administrateur n'est pas encore configuré.");
       return;
@@ -313,6 +314,7 @@ export default function BoostPlans() {
         `Plan : ${selectedPlan.nom}`,
         `Produit : ${product?.titre || selectedProductId}`,
         `Montant : ${selectedPlan.prix.toLocaleString('fr-FR')} FCFA`,
+        `Moyen de paiement : ${operateur === 'MoMo' ? 'MTN Mobile Money' : 'Orange Money'}`,
         `Numéro payeur : ${numero.trim() || 'Non renseigné'}`,
         '',
         'Je joins la capture ou le reçu de paiement à ce message.',
@@ -689,8 +691,8 @@ export default function BoostPlans() {
                         <label className="block text-sm font-bold text-slate-700">Moyen de paiement</label>
                         <div className="grid grid-cols-2 gap-4">
                           <div
-                            title="Paiement MTN bientôt disponible"
-                            className={`p-4 rounded-2xl border-2 cursor-not-allowed opacity-50 flex flex-col items-center justify-center gap-2 transition-all ${
+                            onClick={() => setOperateur('MoMo')}
+                            className={`p-4 rounded-2xl border-2 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all ${
                               operateur === 'MoMo' ? 'border-[#ffcc00] bg-[#ffcc00]/10' : 'border-slate-100 hover:border-slate-200'
                             }`}
                           >
@@ -708,7 +710,7 @@ export default function BoostPlans() {
                             <span className="text-xs font-bold text-slate-700">Orange Money</span>
                           </div>
                         </div>
-                        <p className="text-xs text-slate-500">Le paiement Boost est actuellement disponible via Orange Money.</p>
+                        <p className="text-xs text-slate-500">Le paiement Boost est disponible via Orange Money et MTN Mobile Money.</p>
                       </div>
 
                       {/* Saisie Numéro et Validation */}
@@ -719,13 +721,24 @@ export default function BoostPlans() {
                               <p className="font-extrabold text-orange-700 mb-2">Paiement Orange Money</p>
                               <ol className="list-decimal pl-5 space-y-1.5">
                                 <li>Composez <strong>#150*47#</strong> sur votre téléphone.</li>
-                                <li>Saisissez le code marchand <strong className="text-base">1044288</strong>.</li>
+                                <li>Saisissez le code marchand <strong className="text-base">{orangeMerchantCode}</strong> ({companyName}).</li>
                                 <li>Payez exactement <strong>{selectedPlan.prix.toLocaleString('fr-FR')} FCFA</strong>.</li>
                                 <li>Conservez le reçu ou faites une capture d’écran.</li>
                               </ol>
                             </div>
                           )}
-                          <label className="block text-sm font-bold text-slate-700 mb-1.5">Numéro Orange Money <span className="font-medium text-slate-400">(facultatif)</span></label>
+                          {operateur === 'MoMo' && (
+                            <div className="mb-5 rounded-2xl border border-yellow-300 bg-yellow-50 p-4 text-sm text-slate-700">
+                              <p className="font-extrabold text-yellow-700 mb-2">Paiement MTN Mobile Money</p>
+                              <ol className="list-decimal pl-5 space-y-1.5">
+                                <li>Composez <strong>*126*4*{momoMerchantCode}*{selectedPlan.prix}#</strong> sur votre téléphone.</li>
+                                <li>Vérifiez le nom du marchand : <strong>{companyName}</strong> (code <strong className="text-base">{momoMerchantCode}</strong>).</li>
+                                <li>Payez exactement <strong>{selectedPlan.prix.toLocaleString('fr-FR')} FCFA</strong>.</li>
+                                <li>Conservez le reçu ou faites une capture d’écran.</li>
+                              </ol>
+                            </div>
+                          )}
+                          <label className="block text-sm font-bold text-slate-700 mb-1.5">Numéro {operateur === 'MoMo' ? 'MTN Mobile Money' : 'Orange Money'} <span className="font-medium text-slate-400">(facultatif)</span></label>
                           <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                               <Phone className="h-5 w-5 text-slate-400" />
@@ -739,7 +752,7 @@ export default function BoostPlans() {
                             />
                           </div>
                           <p className="text-xs text-slate-500 mt-2">
-                            Si vous renseignez ce champ, indiquez le numéro avec lequel vous effectuerez la transaction Orange Money. Cela aidera l’administrateur à vérifier votre preuve de paiement.
+                            Si vous renseignez ce champ, indiquez le numéro avec lequel vous effectuerez la transaction {operateur === 'MoMo' ? 'MTN Mobile Money' : 'Orange Money'}. Cela aidera l’administrateur à vérifier votre preuve de paiement.
                           </p>
                           <p className="text-xs text-slate-500 mt-2">
                             Une demande de <strong>{selectedPlan.prix.toLocaleString()} FCFA</strong> sera enregistrée. Aucun boost ne sera activé avant vérification de la preuve.
@@ -750,7 +763,7 @@ export default function BoostPlans() {
                           type="submit"
                           disabled={processing}
                           className={`w-full py-3.5 rounded-xl text-white font-extrabold flex items-center justify-center gap-2 transition-all shadow-md ${
-                            'bg-[#ff6600] hover:bg-[#cc5200] shadow-[#ff6600]/20'
+                            operateur === 'MoMo' ? 'bg-[#004f71] hover:bg-[#003a54] shadow-[#004f71]/20' : 'bg-[#ff6600] hover:bg-[#cc5200] shadow-[#ff6600]/20'
                           } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           {processing ? 'Enregistrement...' : 'J’ai payé — envoyer la preuve'}

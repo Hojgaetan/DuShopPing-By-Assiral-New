@@ -5,7 +5,7 @@
 
 import React, { Suspense, useState, FormEvent } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
-import { customerServiceNumber, customerServiceUrl } from './lib/contact';
+import { customerServiceDisplay, customerServiceUrl,customerCallDisplay, customerCallUrl, companyName, companyAddress } from './lib/contact';
 import Header from './components/Header';
 import Banner728x90 from './components/Banner728x90';
 
@@ -49,6 +49,8 @@ import { ProduitUI } from './types';
 import { Check } from 'lucide-react';
 import { fetchPublicProducts, incrementProductClics, subscribeNewsletter } from './lib/services';
 import { supabase } from './lib/supabase';
+
+const SHOW_NEWSLETTER = false;
 
 export default function App() {
   // Common states shared between routes or accessed through navigation
@@ -245,7 +247,7 @@ export default function App() {
                   DuShopPing
                 </span>
                 <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
-                  Célébrer l'excellence de l'artisanat africain en connectant les créateurs du continent au marché mondial. Le panafricanisme moderne à travers le commerce équitable.
+                  DuShopPing est une marketplace qui met en relation les vendeurs tiers et les potentiels acheteurs.
                 </p>
               </div>
 
@@ -275,13 +277,17 @@ export default function App() {
                     <Link to="/politique-confidentialite" className="hover:text-emerald-450 transition-colors font-sans">Politique de confidentialité</Link>
                   </li>
                   <li>
-                    {customerServiceUrl ? <a href={customerServiceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-450 transition-colors font-sans">Service client WhatsApp : +{customerServiceNumber}</a> : <span>Service client — numéro à compléter</span>}
+                    {customerServiceUrl ? <a href={customerServiceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-450 transition-colors font-sans">Service client WhatsApp : {customerServiceDisplay}</a> : <span>Service client — numéro à compléter</span>}
                   </li>
+                  <li>
+                    <a href={customerCallUrl} className="hover:text-emerald-450 transition-colors font-sans">Appel clients : {customerCallDisplay}</a>
+                  </li>
+                  <li className="font-sans">{companyName}<br />{companyAddress}</li>
                 </ul>
               </div>
 
-              {/* Newsletter Subscribe */}
-              <div className="space-y-4">
+              {/* Newsletter Subscribe (masquée temporairement) */}
+              {SHOW_NEWSLETTER && <div className="space-y-4">
                 <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-1 font-display">
                   Newsletter
                 </h4>
@@ -316,7 +322,7 @@ export default function App() {
                     {newsletterError && <p className="text-xs text-rose-400">{newsletterError}</p>}
                   </form>
                 )}
-              </div>
+              </div>}
 
             </div>
 

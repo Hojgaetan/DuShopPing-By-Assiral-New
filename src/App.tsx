@@ -46,7 +46,7 @@ import { AuthProvider } from './context/AuthContext';
 
 // Types and Data
 import { ProduitUI } from './types';
-import { Check } from 'lucide-react';
+import { Check, MapPin, Phone } from 'lucide-react';
 import { fetchPublicProducts, incrementProductClics, subscribeNewsletter } from './lib/services';
 import { supabase } from './lib/supabase';
 
@@ -109,17 +109,19 @@ export default function App() {
   };
 
   const contactSellerForCall = (product: ProduitUI) => {
-    const number = (product.whatsapp_contact || product.telephone_contact || '').replace(/\D/g, '');
+    const number = (product.telephone_contact || '').replace(/\D/g, '');
     if (!number) return;
     void incrementProductClics(product.id, 'AppelDirect');
-    window.open(`https://wa.me/${number}?text=${encodeURIComponent(`Bonjour, je souhaite échanger par appel au sujet de votre article « ${product.titre} » sur DuShopPing.`)}`, '_blank', 'noopener,noreferrer');
+    window.location.href = 'tel:+' + number;
   };
 
   const contactSellerOnWhatsApp = (product: ProduitUI) => {
     const number = (product.whatsapp_contact || product.telephone_contact || '').replace(/\D/g, '');
     if (!number) return;
     void incrementProductClics(product.id, 'ClicWhatsApp');
-    window.open(`https://wa.me/${number}?text=${encodeURIComponent(`Bonjour, je suis intéressé(e) par votre article « ${product.titre} » sur DuShopPing. Est-il toujours disponible ?`)}`, '_blank', 'noopener,noreferrer');
+    const productUrl = new URL('/product/' + encodeURIComponent(product.id), window.location.origin);
+    const message = `Bonjour, je suis intéressé(e) par votre article « ${product.titre} ». Est-il toujours disponible ? ${productUrl.href}`;
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -247,7 +249,7 @@ export default function App() {
                   DuShopPing
                 </span>
                 <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
-                  DuShopPing est une marketplace qui met en relation les vendeurs tiers et les potentiels acheteurs.
+                  DuShopPing, c’est donner de la visibilité numérique à vos produits.
                 </p>
               </div>
 
@@ -260,7 +262,7 @@ export default function App() {
                   <li>
                     <a href="/" className="hover:text-emerald-450 transition-colors">La place du marché</a>
                   </li>
-                  <li><a href="/dashboard/publish" className="hover:text-emerald-450 transition-colors">Vendre des créations</a></li>
+                  <li><Link to="/register" className="hover:text-emerald-450 transition-colors">Devenir vendeur</Link></li>
                 </ul>
               </div>
 
@@ -276,13 +278,26 @@ export default function App() {
                   <li>
                     <Link to="/politique-confidentialite" className="hover:text-emerald-450 transition-colors font-sans">Politique de confidentialité</Link>
                   </li>
-                  <li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4 font-display">
+                  Contact
+                </h4>
+                <ul className="space-y-2.5 text-xs sm:text-sm text-slate-400">
+                  <li className="flex items-center gap-2">
+                    <ion-icon name="logo-whatsapp" aria-hidden="true" />
                     {customerServiceUrl ? <a href={customerServiceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-450 transition-colors font-sans">Service client WhatsApp : {customerServiceDisplay}</a> : <span>Service client — numéro à compléter</span>}
                   </li>
-                  <li>
+                  <li className="flex items-center gap-2">
+                    <Phone className="size-4 shrink-0" aria-hidden="true" />
                     <a href={customerCallUrl} className="hover:text-emerald-450 transition-colors font-sans">Appel clients : {customerCallDisplay}</a>
                   </li>
-                  <li className="font-sans">{companyName}<br />{companyAddress}</li>
+                  <li className="flex items-start gap-2 font-sans">
+                    <MapPin className="size-4 shrink-0" aria-hidden="true" />
+                    <span>{companyName}<br />{companyAddress}</span>
+                  </li>
                 </ul>
               </div>
 

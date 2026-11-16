@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, MessageSquare, Star, BadgeCheck, MapPin, Image as ImageIcon } from 'lucide-react';
+import { Phone, Star, BadgeCheck, MapPin, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ProduitUI } from '../types';
 
@@ -123,6 +123,7 @@ export default function ProductCard({
                   e.stopPropagation();
                   onCallSeller(product);
                 }}
+                disabled={!product.telephone_contact}
                 className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-200 hover:border-brand text-slate-700 hover:text-brand text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 <Phone className="w-4 h-4 shrink-0" />
@@ -135,10 +136,11 @@ export default function ProductCard({
                   e.stopPropagation();
                   onChatSeller(product);
                 }}
+                disabled={!product.whatsapp_contact && !product.telephone_contact}
                 className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
-                <MessageSquare className="w-4 h-4 shrink-0" />
-                <span>Message</span>
+                <ion-icon name="logo-whatsapp" aria-hidden="true" />
+                <span>WhatsApp</span>
               </motion.button>
             </div>
           </div>
@@ -200,8 +202,9 @@ export default function ProductCard({
                   e.stopPropagation();
                   onCallSeller(product);
                 }}
+                disabled={!product.telephone_contact}
                 className="p-1 px-1.5 text-slate-600 hover:text-brand hover:bg-brand-light rounded transition-all cursor-pointer"
-                title="Consulter le numéro"
+                title="Appeler le vendeur"
                 aria-label="Appeler le vendeur"
               >
                 <Phone className="w-3.5 h-3.5" />
@@ -211,11 +214,12 @@ export default function ProductCard({
                   e.stopPropagation();
                   onChatSeller(product);
                 }}
+                disabled={!product.whatsapp_contact && !product.telephone_contact}
                 className="p-1 px-1.5 text-slate-600 hover:text-brand hover:bg-brand-light rounded transition-all cursor-pointer"
-                title="Ouvrir le chat interactif"
-                aria-label="Discuter avec le vendeur"
+                title="Écrire sur WhatsApp"
+                aria-label="Écrire sur WhatsApp"
               >
-                <MessageSquare className="w-3.5 h-3.5" />
+                <ion-icon name="logo-whatsapp" aria-hidden="true" />
               </button>
             </div>
           </div>

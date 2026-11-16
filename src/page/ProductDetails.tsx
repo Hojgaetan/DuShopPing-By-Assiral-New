@@ -6,10 +6,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Phone, MessageSquare, MapPin, ArrowLeft, Shield, Sparkles, AlertCircle, ChevronLeft, ChevronRight, Store } from 'lucide-react';
+import { Phone, MapPin, ArrowLeft, Shield, Sparkles, AlertCircle, ChevronLeft, ChevronRight, Store } from 'lucide-react';
 import { ProduitUI } from '../types';
 import ProductCard from '../components/ProductCard';
-import { fetchProductById, incrementProductClics, incrementProductViews } from '../lib/services';
+import { fetchProductById, incrementProductViews } from '../lib/services';
 
 interface ProductDetailsProps {
   customProducts: ProduitUI[];
@@ -101,16 +101,6 @@ export default function ProductDetails({
 
   const galleryImages = (product.images || []).filter(Boolean);
   const selectedImage = galleryImages[selectedImageIndex] || galleryImages[0];
-
-  const openSellerWhatsApp = (intent: 'call' | 'message') => {
-    const whatsappNumber = (product.whatsapp_contact || product.telephone_contact || '').replace(/\D/g, '');
-    if (!whatsappNumber) return;
-    const text = intent === 'call'
-      ? 'Bonjour, je souhaite échanger par appel au sujet de votre article « ' + product.titre + ' » sur DuShopPing.'
-      : 'Bonjour, je suis intéressé(e) par votre article « ' + product.titre + ' » sur DuShopPing. Est-il toujours disponible ?';
-    void incrementProductClics(product.id, intent === 'call' ? 'AppelDirect' : 'ClicWhatsApp');
-    window.open('https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
-  };
 
   // Find similar products in the same category (excluding current)
   const similarProducts = customProducts
@@ -220,7 +210,7 @@ export default function ProductDetails({
             <div className="space-y-2">
               <h4 className="font-bold text-slate-800 text-sm font-display">Description de l'article :</h4>
               <p className="text-sm text-slate-600 leading-relaxed font-sans whitespace-pre-line">
-                {product.description || "Cet artisanat africain d'excellence a été créé de manière écoresponsable. Chaque détail célèbre la beauté et la richesse d'un héritage culturel d'Afrique, en employant des matériaux de premier choix. Contactez directement le vendeur pour organiser un rendez-vous ou obtenir plus de détails."}
+                {product.description || "Le vendeur n’a pas renseigné de description."}
               </p>
             </div>
           </div>
@@ -254,21 +244,22 @@ export default function ProductDetails({
             {/* CTA Contact Buttons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               <button
-                onClick={() => openSellerWhatsApp('call')}
+                type="button"
+                onClick={() => onChatSeller(product)}
                 disabled={!product.whatsapp_contact && !product.telephone_contact}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm py-3.5 rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Phone className="w-4 h-4 shrink-0" />
-                <span>Appeler le Vendeur</span>
+                <ion-icon name="logo-whatsapp" aria-hidden="true" />
+                <span>Écrire sur WhatsApp</span>
               </button>
-
               <button
-                onClick={() => openSellerWhatsApp('message')}
-                disabled={!product.whatsapp_contact && !product.telephone_contact}
-                className="bg-emerald-950 hover:bg-slate-900 text-white font-extrabold text-sm py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-900"
+                type="button"
+                onClick={() => onCallSeller(product)}
+                disabled={!product.telephone_contact}
+                className="bg-emerald-950 hover:bg-slate-900 text-white font-extrabold text-sm py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <MessageSquare className="w-4 h-4 text-emerald-450 shrink-0" />
-                <span>Discuter instantanément</span>
+                <Phone className="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span>Appeler le vendeur</span>
               </button>
             </div>
           </div>

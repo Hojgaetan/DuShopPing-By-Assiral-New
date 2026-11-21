@@ -24,6 +24,37 @@ body {
   color: #1e293b;
 }
 
+/* Let long product names, addresses and form controls fit narrow screens. */
+#root {
+  min-width: 0;
+}
+
+main,
+#main-footer {
+  overflow-wrap: anywhere;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  #main-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

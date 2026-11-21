@@ -185,8 +185,8 @@ export default function Home({
             <>
               {/* Row 1: Produits A la une */}
               <section className="space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
                     <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-display">
                       Produits À la une
                     </h2>
@@ -237,7 +237,7 @@ export default function Home({
 
               {/* Row 2: Sélections Populaires */}
               <section className="space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div>
                     <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-display">
                       Dernières publications
@@ -309,7 +309,7 @@ export default function Home({
 
               {/* Row 4: Les Mieux Notés */}
               <section className="space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div>
                     <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-display">
                       Nouveautés

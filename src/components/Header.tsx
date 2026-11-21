@@ -176,10 +176,10 @@ export default function Header({
       
       {/* LEVEL 1: Top Navigation Level (Logo, Search Bar, Profil & Actions) */}
       <div className="border-b border-slate-100/75">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
           
           {/* Logo Brand */}
-          <div className="shrink-0 animate-fade-in">
+          <div className="min-w-0 flex-1 md:flex-none animate-fade-in">
             <motion.div 
               whileHover={{ scale: 1.02 }}
               onClick={() => { 
@@ -193,13 +193,13 @@ export default function Header({
               <img 
                 src={brandLogo} 
                 alt="DuShopPing Logo" 
-                className="h-12 sm:h-14 w-auto object-contain" 
+                className="h-auto w-full max-w-36 sm:max-w-48 md:max-w-44 lg:max-w-56 object-contain"
               />
             </motion.div>
           </div>
 
           {/* Centered Search Bar (Desktop) */}
-          <div className="flex-1 max-w-xl mx-2 sm:mx-6 md:mx-12 hidden md:block">
+          <div className="flex-1 min-w-0 max-w-xl mx-2 lg:mx-6 hidden md:block">
             <div className="relative">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
                 <Search className="w-4 h-4" />
@@ -213,7 +213,7 @@ export default function Header({
                 }}
                 placeholder="Rechercher un article, un artisan, ou un mot-clé..."
                 className="w-full text-xs sm:text-sm pl-9 pr-14 py-2.5 bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-brand focus:border-brand rounded-2xl placeholder:text-slate-400 transition-all text-slate-800"
-                id="search-input"
+                aria-label="Rechercher un article" id="search-input"
               />
               {searchQuery && (
                 <button
@@ -227,11 +227,11 @@ export default function Header({
           </div>
 
           {/* Visitor Auth Access Links or User Menu */}
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0 font-sans" id="auth-visitor-links">
+          <div className="flex items-center gap-1 sm:gap-4 shrink-0 font-sans" id="auth-visitor-links">
             
             {/* Mobile Search Toggle */}
             <button 
-              className="md:hidden p-2 text-slate-600 hover:text-brand"
+              aria-label="Rechercher" aria-expanded={showMobileSearch} className="md:hidden min-h-11 min-w-11 p-2 text-slate-600 hover:text-brand"
               onClick={() => setShowMobileSearch(!showMobileSearch)}
             >
               <Search className="w-5 h-5" />
@@ -250,9 +250,9 @@ export default function Header({
                     {notifications.some(item => !item.est_lue) && <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">{Math.min(notifications.filter(item => !item.est_lue).length, 99)}</span>}
                   </button>
                   <AnimatePresence>
-                    {showNotifications && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[70]">
+                    {showNotifications && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="fixed left-4 right-4 mt-2 sm:absolute sm:left-auto sm:right-0 sm:w-[22rem] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[70]">
                       <div className="p-4 border-b border-slate-100 flex items-center justify-between"><div><p className="font-extrabold text-slate-900">Notifications</p><p className="text-[11px] text-slate-400">{notifications.filter(item => !item.est_lue).length} non lue(s)</p></div>{notifications.some(item => !item.est_lue) && <button onClick={() => void markAllNotifications()} className="text-xs font-bold text-indigo-600">Tout marquer comme lu</button>}</div>
-                      <div className="max-h-96 overflow-y-auto">{notificationsLoading && notifications.length === 0 ? <div className="p-8 text-center text-sm text-slate-400">Chargement…</div> : notifications.length === 0 ? <div className="p-8 text-center text-sm text-slate-400">Aucune notification.</div> : notifications.map(notification => <button key={notification.id} onClick={() => void openNotification(notification)} className={`w-full text-left p-4 border-b border-slate-50 hover:bg-slate-50 flex gap-3 ${notification.est_lue ? 'bg-white' : 'bg-indigo-50/50'}`}>
+                      <div className="max-h-[50dvh] sm:max-h-96 overflow-y-auto">{notificationsLoading && notifications.length === 0 ? <div className="p-8 text-center text-sm text-slate-400">Chargement…</div> : notifications.length === 0 ? <div className="p-8 text-center text-sm text-slate-400">Aucune notification.</div> : notifications.map(notification => <button key={notification.id} onClick={() => void openNotification(notification)} className={`w-full text-left p-4 border-b border-slate-50 hover:bg-slate-50 flex gap-3 ${notification.est_lue ? 'bg-white' : 'bg-indigo-50/50'}`}>
                         <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${notification.est_lue ? 'bg-slate-200' : 'bg-indigo-600'}`} /><span className="min-w-0"><span className="block text-sm font-bold text-slate-800">{notification.titre}</span><span className="block text-xs text-slate-500 mt-1 leading-relaxed">{notification.message}</span><span className="block text-[10px] text-slate-400 mt-2">{new Date(notification.date_creation).toLocaleString('fr-FR')}</span></span>
                       </button>)}</div>
                     </motion.div>}
@@ -344,7 +344,7 @@ export default function Header({
 
             {/* Mobile Menu Toggle */}
             <button 
-              className="md:hidden p-2 -mr-2 text-slate-600 hover:text-brand"
+              aria-label={showMobileMenu ? "Fermer le menu" : "Ouvrir le menu"} aria-expanded={showMobileMenu} className="md:hidden min-h-11 min-w-11 p-2 -mr-2 text-slate-600 hover:text-brand"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
             >
               {showMobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -373,7 +373,7 @@ export default function Header({
                       setSearchQuery(e.target.value);
                       navigate('/');
                     }}
-                    placeholder="Rechercher..."
+                    aria-label="Rechercher un article" placeholder="Rechercher..."
                     className="w-full text-sm pl-9 pr-14 py-3 bg-white border border-slate-200 focus:bg-white focus:ring-2 focus:ring-brand focus:border-brand rounded-xl placeholder:text-slate-400 transition-all text-slate-800"
                   />
                   {searchQuery && (
@@ -549,7 +549,7 @@ export default function Header({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden overflow-y-auto max-h-[80vh] border-b border-slate-100 bg-white"
+            className="md:hidden overflow-y-auto max-h-[60dvh] border-b border-slate-100 bg-white"
           >
             <div className="p-4 space-y-4">
               {/* Category list */}

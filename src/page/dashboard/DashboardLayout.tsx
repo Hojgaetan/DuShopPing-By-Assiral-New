@@ -39,21 +39,21 @@ export default function DashboardLayout() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
+    <div className="max-w-7xl mx-auto w-full py-4 sm:py-8 flex flex-col lg:flex-row gap-4 lg:gap-8">
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 shrink-0">
-        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 sticky top-28">
-          <div className="flex items-center gap-3 mb-8 px-2">
+      <aside className="w-full min-w-0 lg:w-64 shrink-0">
+        <div className="bg-white rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 shadow-sm border border-slate-100 lg:sticky lg:top-28">
+          <div className="flex items-center gap-3 mb-4 lg:mb-8 px-2">
             <div className="w-12 h-12 bg-emerald-100 text-[#02603c] rounded-2xl flex items-center justify-center font-bold text-xl">
               {user.nom.charAt(0)}
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="font-extrabold text-slate-900 truncate">{user.nom}</h3>
               <p className="text-xs text-slate-500">{user.role === 'Entreprise' ? 'Espace Entreprise' : 'Espace Vendeur'}</p>
             </div>
           </div>
 
-          <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible scrollbar-hide pb-2 md:pb-0">
+          <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -72,7 +72,7 @@ export default function DashboardLayout() {
             ))}
           </nav>
 
-          <div className="mt-4 md:mt-8 pt-4 md:pt-6 border-t border-slate-100">
+          <div className="mt-4 lg:mt-8 pt-4 lg:pt-6 border-t border-slate-100">
             <button
               onClick={() => navigate('/')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-500 hover:text-slate-800 transition-all w-full"

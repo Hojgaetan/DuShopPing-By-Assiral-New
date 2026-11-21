@@ -52,8 +52,8 @@ export default function SellerPage({
   return (
     <div className="space-y-8" id="seller-profile-view">
       {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-500">
           <Link to="/" className="hover:text-emerald-700 font-medium transition-colors">Accueil</Link>
           <span>/</span>
           <span className="text-slate-850 font-semibold">Artisans</span>

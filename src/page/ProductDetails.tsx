@@ -110,8 +110,8 @@ export default function ProductDetails({
   return (
     <div className="space-y-12" id="product-detail-view">
       {/* Breadcrumbs */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-500">
           <Link to="/" className="hover:text-emerald-700 font-medium transition-colors">Accueil</Link>
           <span>/</span>
           <Link to={`/category/${product.categorie_id}`} className="hover:text-emerald-700 font-medium transition-colors">{product.categorie_id}</Link>
@@ -128,7 +128,7 @@ export default function ProductDetails({
       </div>
 
       {/* Main product presentation card */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-xs overflow-hidden grid grid-cols-1 md:grid-cols-12 gap-8 p-6 sm:p-8">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-xs overflow-hidden grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-8 p-4 sm:p-8">
         
         {/* Left Column: Visual Area (5 Cols) */}
         <div className="md:col-span-5 space-y-4">
@@ -217,7 +217,7 @@ export default function ProductDetails({
 
           {/* Seller / Contact Info Block */}
           <div className="bg-slate-50 rounded-2xl p-4 sm:p-5 border border-slate-100 space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center border border-emerald-200"><Store className="w-6 h-6" /></div>
                 <div>

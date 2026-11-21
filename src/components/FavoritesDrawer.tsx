@@ -38,7 +38,7 @@ export default function FavoritesDrawer({
               className="absolute inset-0 bg-slate-900/45 backdrop-blur-xs transition-opacity"
             />
 
-            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
+            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-0 sm:pl-16">
               <motion.div
                 initial={{ translateX: '100%' }}
                 animate={{ translateX: '0%' }}
@@ -48,7 +48,7 @@ export default function FavoritesDrawer({
               >
                 <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-2xl themes-cyan">
                   {/* Drawer Header */}
-                  <div className="bg-brand text-white p-6 flex items-center justify-between">
+                  <div className="bg-brand text-white p-4 sm:p-6 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Heart className="w-5 h-5 fill-white" />
                       <h2 className="text-lg font-bold font-display">Mes Favoris ({favorites.length})</h2>

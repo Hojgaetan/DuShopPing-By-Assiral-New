@@ -491,7 +491,7 @@ export default function BoostPlans() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.85, y: 30 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden border border-slate-100"
+                className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto border border-slate-100"
                 onClick={e => e.stopPropagation()}
               >
               {/* Header with gradient */}
@@ -576,7 +576,7 @@ export default function BoostPlans() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            className="bg-emerald-50 rounded-[2rem] p-12 text-center border border-emerald-100 shadow-sm"
+            className="bg-emerald-50 rounded-[2rem] p-5 sm:p-12 text-center border border-emerald-100 shadow-sm"
           >
             <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="w-10 h-10" />
@@ -596,18 +596,18 @@ export default function BoostPlans() {
           <motion.div key="plans" className="space-y-8" exit={{ opacity: 0 }}>
             <h3 className="font-extrabold text-slate-900">2. Choisissez votre formule</h3>
             {/* Grille des Plans */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               {loadingPlans ? (
-                <div className="md:col-span-3 py-12 text-center text-slate-500">
+                <div className="xl:col-span-3 py-12 text-center text-slate-500">
                   <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-amber-500" />
                   Chargement des formules...
                 </div>
               ) : plansError ? (
-                <div className="md:col-span-3 bg-rose-50 text-rose-700 border border-rose-100 rounded-2xl p-6 flex items-center justify-center gap-2 font-bold">
+                <div className="xl:col-span-3 bg-rose-50 text-rose-700 border border-rose-100 rounded-2xl p-6 flex items-center justify-center gap-2 font-bold">
                   <AlertCircle className="w-5 h-5" /> {plansError}
                 </div>
               ) : plans.length === 0 ? (
-                <div className="md:col-span-3 bg-white border border-slate-100 rounded-2xl p-10 text-center text-slate-500">
+                <div className="xl:col-span-3 bg-white border border-slate-100 rounded-2xl p-10 text-center text-slate-500">
                   Aucune formule n'est disponible pour le moment.
                 </div>
               ) : plans.map((plan) => {
@@ -677,7 +677,7 @@ export default function BoostPlans() {
                   exit={{ opacity: 0, height: 0 }}
                   className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden"
                 >
-                  <div className="p-8">
+                  <div className="p-4 sm:p-8">
                     <h3 className="text-xl font-extrabold text-slate-900 mb-6">Procéder au paiement</h3>
                     {paymentError && (
                       <div className="mb-6 bg-rose-50 text-rose-700 border border-rose-100 rounded-xl p-4 flex items-center gap-2 text-sm font-bold">
@@ -689,7 +689,7 @@ export default function BoostPlans() {
                       {/* Choix de l'opérateur */}
                       <div className="space-y-4">
                         <label className="block text-sm font-bold text-slate-700">Moyen de paiement</label>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div
                             onClick={() => setOperateur('MoMo')}
                             className={`p-4 rounded-2xl border-2 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all ${
